@@ -89,10 +89,15 @@ def check(problems):
         problems.append(f"أندرويد: الأيقونة XML بس و minSdk {min_sdk.group(1)} — "
                         "لازم ٢٦ أو أعلى، أو تضيف أيقونة PNG")
 
-    # 6. CI must copy the built game into assets, or the app ships an empty page
-    wf = (ROOT / ".github/workflows/build.yml").read_text(encoding="utf-8")
-    if "game/index.html" not in wf or "assets" not in wf:
-        problems.append("أندرويد: خطوة نسخ game/index.html لمجلد assets مش موجودة في مسار البناء")
+    # 6. The build itself must copy the game into assets, or the app ships an
+    #    empty page. This lives in Gradle on purpose: a check that depended on
+    #    the CI file would force two files to change in one commit.
+    # Look for the task being REGISTERED, not merely mentioned: a dependsOn line
+    # referring to a task that no longer exists still contains the name.
+    if "game/index.html" not in app_gradle or "tasks.register('copyGame'" not in app_gradle:
+        problems.append("أندرويد: مفيش مهمة بتنسخ game/index.html لمجلد assets في app/build.gradle")
+    if "dependsOn 'copyGame'" not in app_gradle:
+        problems.append("أندرويد: مهمة نسخ اللعبة مش مربوطة بالبناء — التطبيق هيتبني بلعبة قديمة")
 
     # 7. the shell calls into the page on back; the page must answer
     ui = (ROOT / "game/src/ui.js").read_text(encoding="utf-8")

@@ -56,10 +56,7 @@ jobs:
         with:
           gradle-version: "8.7"
 
-      # The app is the game plus a WebView. This is the only place the two meet.
-      - name: نسخ اللعبة جوّه التطبيق
-        run: cp game/index.html android/app/src/main/assets/index.html
-
+      # Gradle copies the game into assets itself — see android/app/build.gradle.
       - name: بناء نسخة التجربة
         working-directory: android
         run: gradle assembleDebug --no-daemon --stacktrace

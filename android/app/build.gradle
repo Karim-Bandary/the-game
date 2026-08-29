@@ -28,6 +28,18 @@ android {
     }
 }
 
+// The app must ship the game that is in this repo, not whatever happens to be
+// sitting in assets. Doing this in Gradle rather than in CI keeps the build
+// correct wherever it runs, and gives the checker one place to verify.
+tasks.register('copyGame', Copy) {
+    from file("$rootDir/../game/index.html")
+    into file("src/main/assets")
+}
+
+tasks.named('preBuild') {
+    dependsOn 'copyGame'
+}
+
 // No dependencies at all. The game is one HTML file in a WebView; pulling in
 // appcompat or androidx would add hundreds of classes for nothing.
 dependencies {

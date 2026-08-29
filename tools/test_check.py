@@ -32,6 +32,10 @@ TEXT_CASES = [
      lambda s: s.replace('name="app_name"', 'name="other"')),
     ("minSdk نزل تحت ٢٦ والأيقونة XML بس", "android/app/build.gradle",
      lambda s: s.replace("minSdk 26", "minSdk 21")),
+    ("نسخ اللعبة للتطبيق اتشال", "android/app/build.gradle",
+     lambda s: s.replace("tasks.register('copyGame', Copy) {", "tasks.register('unused', Copy) {")),
+    ("نسخ اللعبة مش مربوط بالبناء", "android/app/build.gradle",
+     lambda s: s.replace("dependsOn 'copyGame'", "// unlinked")),
     ("زرار الرجوع بينده على دالة مش موجودة", "game/src/ui.js",
      lambda s: s.replace("function onAndroidBack()", "function onAndroidBackX()")),
 ]
