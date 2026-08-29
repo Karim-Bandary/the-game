@@ -32,7 +32,13 @@ REBUILD_CASES = [
     ("لفة السنة اتكسرت", "game/src/engine.js",
      lambda s: s.replace("if (S.month > 12)", "if (S.month > 13)")),
     ("معاملات الاختيارات مش بتتطبق", "game/src/engine.js",
-     lambda s: s.replace("for (var k in opt.mods) if (S[k] !== undefined) S[k] += opt.mods[k];", "")),
+     lambda s: s.replace("      S[k] += opt.mods[k];", "      // removed")),
+    ("رسمة تاب اتشالت", "game/src/art.js", lambda s: s.replace("  pol: '<svg", "  polX: '<svg", 1)),
+    ("تدرّج لوني مالوش تعريف", "game/src/art.js",
+     lambda s: s.replace('id="fade-down"', 'id="fade-gone"', 1)),
+    ("تركيبة بقت فخ — كفاءة واطية أوي", "tools/build_setup_mockup.py",
+     lambda s: s.replace('"mods": {"loyalty": +15, "competence": -6},',
+                         '"mods": {"loyalty": +15, "competence": -40},')),
 ]
 
 JSON_CASES = [
@@ -48,6 +54,9 @@ JSON_CASES = [
      lambda d: d["society_types"][0].__setitem__("bad", [])),
     ("توازن باظ — الخدمات بقت مجانية", "data/balance.json",
      lambda d: [s.__setitem__("monthly_ask", 1) for s in d["services"].values()]),
+    ("الضرايب اتضاعفت فالدولة بقت غنية", "data/balance.json",
+     lambda d: d["income"].__setitem__("income_tax_coef", 9.0)),
+
 ]
 
 
@@ -63,10 +72,12 @@ def broken_repo_fails(rel, mutate, as_json, rebuild=False):
         else:
             p.write_text(mutate(p.read_text(encoding="utf-8")), encoding="utf-8")
         if rebuild:
-            b = subprocess.run([sys.executable, str(work / "tools" / "build_game.py")],
-                               capture_output=True, text=True)
-            if b.returncode:
-                return True   # the bundler itself refusing is a pass too
+            # Regenerate data first (setup.json is generated), then the bundle.
+            for script in ("build_setup_mockup.py", "build_game.py"):
+                b = subprocess.run([sys.executable, str(work / "tools" / script)],
+                                   capture_output=True, text=True)
+                if b.returncode:
+                    return True   # a builder refusing to build is a pass too
         r = subprocess.run([sys.executable, str(work / "tools" / "check.py")],
                            capture_output=True, text=True)
         return r.returncode != 0

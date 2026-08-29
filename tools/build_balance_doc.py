@@ -35,10 +35,16 @@ SV_ORDER = ["water", "power", "sewage", "health", "edu", "police", "fire"]
 GV_ORDER = ["capital", "industrial", "agri", "south", "border"]
 ICON = dict(water="💧", power="⚡", sewage="🚰", health="🏥", edu="🎓", police="👮", fire="🚒")
 
-# live figures from the simulator, so the document quotes real output
-sim_out = json.loads(subprocess.run([sys.executable, str(ROOT / "tools" / "export_balance.py")],
+# Live figures from tools/simulate.js — which runs the GAME'S OWN engine, not a
+# second implementation of it. Every number below is a number the player meets.
+sim_out = json.loads(subprocess.run(["node", str(ROOT / "tools" / "simulate.js"), "--json"],
                                     capture_output=True, text=True, check=True).stdout)
-S0, LIFE = sim_out["start_state"], sim_out["median_lifespan_months"]
+S0 = {"approval": sim_out["start"]["approval"], "stability": sim_out["start"]["stability"],
+      "avg_service": sim_out["start"]["avgService"],
+      "by_gov": sim_out["start"]["byGov"], "by_service": sim_out["start"]["byService"]}
+LIFE = {k: v["lifespan"] for k, v in sim_out["players"].items()}
+FIRST = sim_out["firstMonth"]
+COMBOS = sim_out["combos"]
 
 total_ask = sum(sv[k]["monthly_ask"] for k in SV_ORDER)
 run_bill = total_ask * st["budget_pct"] / 100
@@ -289,25 +295,49 @@ h.append(f'''
 </section><hr>''')
 
 # ---------------------------------------------------------------- 9 sim
+# Sorted worst-first: the weak combinations are the ones worth looking at.
+COMBO_ROWS = "".join(
+    f'<tr><td class="k">{name}</td><td class="n">{ar(life)} شهر</td></tr>'
+    for name, life in sorted(COMBOS.items(), key=lambda kv: kv[1]))
 h.append(f'''
 <section id="t">
   <h2><span class="num">٩</span>نتيجة المحاكاة</h2>
-  <p class="lede">شغّلت اللعبة ١٢٠ مرة بتلات أنماط لعب مختلفة. دي النتيجة، ودي اللي بتقول إن الأرقام معقولة.</p>
+  <p class="lede">المحاكي بيشغّل <strong>محرك اللعبة نفسه</strong> — مش نسخة منه — بتلات أنماط لعب.
+  يعني كل رقم تحت ده رقم اللاعب هيقابله فعلاً.</p>
   <div class="tw"><table>
     <thead><tr><th>نمط اللعب</th><th>عاش قد إيه</th><th>الحكم</th></tr></thead>
     <tbody>
       <tr><td class="k">سلبي — ما بيعملش حاجة</td><td class="n">{ar(LIFE["سلبي"])} شهر ≈ {ar(round(LIFE["سلبي"]/12))} سنين</td>
           <td>الدولة بتتآكل لوحدها من نمو السكان. <strong>الوقوف مكانك مش خيار.</strong></td></tr>
       <tr><td class="k">معقول — بيصلّح الأسوأ</td><td class="n">{ar(LIFE["معقول"])} شهر ≈ {ar(round(LIFE["معقول"]/12))} سنة</td>
-          <td>ضعف عمر السلبي ونص. <strong>المهارة بتفرق فعلاً.</strong></td></tr>
+          <td>{ar(round(LIFE["معقول"]/LIFE["سلبي"]*10)/10 if False else round(LIFE["معقول"]/LIFE["سلبي"],1))} ضعف عمر السلبي. <strong>المهارة بتفرق فعلاً.</strong></td></tr>
       <tr><td class="k">حرامي — بيسرق ويطبع</td><td class="n">{ar(LIFE["حرامي"])} شهر ≈ {ar(round(LIFE["حرامي"]/12))} سنين</td>
           <td>عمر قصير، جيب مليان. <strong>مقايضة حقيقية مش عقوبة.</strong></td></tr>
     </tbody>
   </table></div>
   <div class="risk"><b>اللي المحاكاة بتقوله</b>
   الفرق بين أسوأ لاعب وأحسن لاعب هو <strong>{ar(round(LIFE["معقول"]/LIFE["سلبي"],1) if False else round(LIFE["معقول"]/LIFE["سلبي"]))} أضعاف العمر</strong>. لو الفرق كان أقل من الضعف، كان معنى كده إن قراراتك مش مهمة. ولو كان عشر أضعاف، كان معناه إن فيه استراتيجية واحدة صح وباقي اللعب غلط.</div>
+  <h3>أول شهر بالأرقام</h3>
+  <div class="tw"><table>
+    <thead><tr><th>البند</th><th>القيمة</th></tr></thead>
+    <tbody>
+      <tr><td class="k">الدخل</td><td class="n">{ar(FIRST["income"])}م</td></tr>
+      <tr><td class="k">المصروف</td><td class="n">{ar(FIRST["expense"])}م</td></tr>
+      <tr><td class="k">منه تشغيل الوزارات</td><td class="n">{ar(FIRST["run"])}م</td></tr>
+      <tr><td class="k">منه استيراد غذاء</td><td class="n">{ar(FIRST["importCost"])}م</td></tr>
+      <tr><td class="k">الصافي</td><td class="n">{"+" if FIRST["net"] >= 0 else "−"}{ar(abs(FIRST["net"]))}م</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>الاتناشر تركيبة حكم ومجتمع</h3>
+  <p>نفس اللاعب المعقول، باختيارات بداية مختلفة. لو تركيبة واحدة متفوقة على الباقي بكتير، يبقى الاختيار ديكور.</p>
+  <div class="tw"><table>
+    <thead><tr><th>التركيبة</th><th>عاش</th></tr></thead>
+    <tbody>{COMBO_ROWS}</tbody>
+  </table></div>
+
   <div class="open"><b>اللي المحاكاة ما بتقولوش</b>
-  دي بتختبر <strong>الاقتصاد بس</strong> — الوزرا والأحزاب والفضايح والأحداث لسه مش فيها، لأنهم لسه ما اتصمموش بالأرقام. كل طبقة هنبنيها هتتضاف للمحاكي وهنعيد الاختبار. <strong>المحاكي ده هو أداتنا الأساسية ضد إني مش شايف الشاشة.</strong></div>
+  دي بتختبر <strong>الاقتصاد بس</strong> — الوزرا والأحزاب والفضايح والأحداث لسه ما اتبنوش، فبونصاتهم في اختيارات البداية <strong>لسه مش شغالة</strong>. يعني أي تركيبة بتبان ضعيفة دلوقتي، الحكم عليها مؤجل لحد ما بونصاتها تشتغل. والمحاكي حاليًا <strong>مفيهوش عشوائية</strong>، فجولة واحدة لكل نمط كافية — أول ما ندخل الأحداث العشوائية هنرجع نحسب متوسطات.</div>
 </section><hr>''')
 
 # ---------------------------------------------------------------- 10 review

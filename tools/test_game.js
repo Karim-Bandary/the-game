@@ -58,12 +58,17 @@ for (const g of SETUP.government_types) {
     startGame();
     combos++;
     for (const key of Object.keys(Object.assign({}, g.mods, c.mods))) {
-      const expected = SETUP.base_start[key] + (g.mods[key] || 0) + (c.mods[key] || 0);
-      const actual = key === 'ap' ? S.apMax : S[key];
-      const clamped = Math.max(0, Math.min(100, expected));
-      ok(actual === expected || actual === clamped,
-        `«${g.nm} + ${c.nm}»: ${key} طلع ${actual} والمفروض ${expected}`);
+      const expected = (g.mods[key] || 0) + (c.mods[key] || 0);
+      ok(S.mods[key] === expected,
+        `«${g.nm} + ${c.nm}»: معامل ${key} اتطبق ${S.mods[key]} والمفروض ${expected}`);
     }
+    // Values the world does not move on its own must land exactly.
+    for (const key of ['competence', 'loyalty']) {
+      const expected = SETUP.base_start[key] + (g.mods[key] || 0) + (c.mods[key] || 0);
+      ok(S[key] === expected, `«${g.nm} + ${c.nm}»: ${key} طلع ${S[key]} والمفروض ${expected}`);
+    }
+    ok(S.apMax === SETUP.base_start.ap + (g.mods.ap || 0) + (c.mods.ap || 0),
+      `«${g.nm} + ${c.nm}»: طاقة القرارات غلط`);
     ok(S.country === 'تجربة' && S.ruler === 'حاكم', 'الأسماء مش بتتحفظ في اللعبة');
   }
 }
@@ -83,11 +88,28 @@ ok(S.ap === startAp, 'طاقة القرارات ما اتجددتش مع الش�
 ok(S.priceIndex > priceBefore, 'مؤشر الأسعار ما تحركش مع التضخم');
 ok(S.log.length >= 5, 'السجل فاضي بعد ٥ سنين');
 
-/* Five years of 6% inflation should compound to roughly ×1.34 — a wrong
-   compounding direction or period would show up here immediately. */
-const expectedIndex = Math.pow(1 + (BALANCE.start.inflation / 100) / 12, 60);
-ok(Math.abs(S.priceIndex - expectedIndex) < 0.01,
-  `مؤشر الأسعار ${S.priceIndex.toFixed(3)} والمفروض ${expectedIndex.toFixed(3)}`);
+/* Inflation decays toward its floor, so five years of compounding must land
+   between the floor rate and the starting rate. Outside that band means the
+   compounding is running the wrong way, or over the wrong period. */
+const lo = Math.pow(1 + (BALANCE.inflation.floor / 100) / 12, 60);
+const hi = Math.pow(1 + (BALANCE.start.inflation / 100) / 12, 60);
+ok(S.priceIndex > lo && S.priceIndex < hi,
+  `مؤشر الأسعار ${S.priceIndex.toFixed(3)} والمفروض بين ${lo.toFixed(3)} و${hi.toFixed(3)}`);
+
+/* The choices must still bite after the world settles: a government that starts
+   the country ten points angrier has to actually start it angrier. */
+const mon = (function () { setupState.gov = SETUP.government_types[0]; setupState.soc = SETUP.society_types[0];
+  setupState.country = 'أ'; setupState.ruler = 'أ'; startGame(); return S.approval; })();
+const dic = (function () { setupState.gov = SETUP.government_types[2]; setupState.soc = SETUP.society_types[0];
+  setupState.country = 'أ'; setupState.ruler = 'أ'; startGame(); return S.approval; })();
+ok(dic < mon, `الديكتاتوري بدأ برضا ${dic.toFixed(0)} والملكي ${mon.toFixed(0)} — المفروض أقل`);
+
+/* Put the reference game back: the screen checks below expect this one. */
+setupState.gov = SETUP.government_types[1];
+setupState.soc = SETUP.society_types[0];
+setupState.country = 'جمهورية النهر'; setupState.ruler = 'كريم';
+startGame();
+for (let i = 0; i < 12; i++) step();
 
 /* -------------------------------------------------------------- screens */
 for (const t of ['pres', 'treas', 'serv', 'govt', 'pol']) {
@@ -98,6 +120,19 @@ drawTop();
 ok(/كريم/.test(store.who), 'اسم الحاكم مش ظاهر في الشريط العلوي');
 ok(/الشهر/.test(store.date), 'التاريخ مش ظاهر في الشريط العلوي');
 ok((store.meters || '').split('mtr').length - 1 === 4, 'الشريط العلوي مش فيه ٤ مؤشرات');
+
+/* Every tab must have its own artwork and its own title band. A missing entry
+   in ART would silently render a band with nothing in it. */
+for (const t of ['pres', 'treas', 'serv', 'govt', 'pol']) {
+  ok(typeof ART[t] === 'string' && ART[t].indexOf('<svg') === 0, 'تاب ' + t + ' مالوش رسمة');
+  ok(/viewBox="0 0 1200 400"/.test(ART[t]), 'رسمة ' + t + ' مقاسها مش مظبوط');
+  tab = t; drawView();
+  ok(store.view.indexOf('class="band"') !== -1, 'تاب ' + t + ' مفيهوش شريط علوي');
+  ok(store.view.indexOf('<svg') !== -1, 'شريط ' + t + ' مفيهوش الرسمة');
+}
+const artIds = Object.keys(ART);
+ok(artIds.length === 5, 'عدد الرسومات ' + artIds.length + ' والمفروض ٥');
+ok(/id="fade-down"/.test(ART_DEFS), 'التدرج المشترك ناقص — الرسومات هتبان بحافة حادة');
 
 /* Every number the player reads must be in Arabic-Indic digits. A stray
    toFixed() or a plain number lands on screen in Latin digits next to Arabic

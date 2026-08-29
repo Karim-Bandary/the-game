@@ -117,6 +117,16 @@ function drawSetup() {
 var TABS = [['pres', '🏛️', 'الرئاسة'], ['treas', '💰', 'الخزينة'], ['serv', '🏗️', 'الخدمات'],
             ['govt', '👔', 'الحكومة'], ['pol', '⚖️', 'السياسة']];
 
+/* One line under each tab's title. Not decoration — it tells the player what
+   this screen is FOR before they have read a single number on it. */
+var BAND_SUB = {
+  pres: 'مكتبك · وقراراتك',
+  treas: 'الدخل والمصروف · وجيبك',
+  serv: 'اللي بتبنيه واللي بتشغّله',
+  govt: 'اللي بيصرفوا فلوسك',
+  pol: 'اللي عايزين كرسيك'
+};
+
 /* Each tab names the plan item that fills it. Blind building means Karim must
    be able to see what is done and what is not without asking. */
 var SOON = {
@@ -153,7 +163,10 @@ function drawNav() {
 }
 
 function drawView() {
-  var h = '';
+  var name = '';
+  for (var i = 0; i < TABS.length; i++) if (TABS[i][0] === tab) name = TABS[i][2];
+  var h = '<div class="band">' + ART[tab]
+    + '<div class="ttl">' + name + '</div><div class="sub">' + BAND_SUB[tab] + '</div></div><div class="pad">';
   if (tab === 'pres') {
     var g = govOf(S), s = socOf(S);
     h += '<div class="card"><h3>' + esc(S.country) + '</h3>'
@@ -162,6 +175,22 @@ function drawView() {
       + '<div class="krow"><span>شهور في الحكم</span><b>' + ar(S.totalMonths) + '</b></div>'
       + '<div class="krow"><span>الخزينة</span><b>' + ar(S.treasury) + 'م</b></div>'
       + '<div class="krow"><span>مؤشر الأسعار</span><b>×' + arDec(S.priceIndex, 2) + '</b></div></div>';
+    // The month's books, shown here until the treasury tab exists. Rule of the
+    // design doc: no number without a visible reason behind it.
+    if (S.lastMonth) {
+      var L = S.lastMonth;
+      h += '<div class="card"><h3>آخر شهر</h3>'
+        + '<div class="krow"><span>الدخل</span><b style="color:var(--good)">+' + ar(L.income) + 'م</b></div>'
+        + '<div class="krow"><span>المصروف</span><b style="color:var(--bad)">−' + ar(L.expense) + 'م</b></div>'
+        + '<div class="krow"><span class="sub">منه تشغيل الوزارات ' + ar(L.run) + 'م · دعم ' + ar(L.subsidy)
+        + 'م · استيراد غذاء ' + ar(L.importCost) + 'م</span></div>'
+        + '<div class="krow" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px">'
+        + '<span>الصافي</span><b style="color:' + (L.net >= 0 ? 'var(--good)' : 'var(--bad)') + '">'
+        + (L.net >= 0 ? '+' : '−') + ar(Math.abs(L.net)) + 'م</b></div>'
+        + '<div class="krow"><span>سعر الغذاء</span><b style="color:'
+        + (S.foodPrice > 62 ? 'var(--bad)' : 'var(--ink)') + '">' + ar(S.foodPrice) + '</b></div>'
+        + '</div>';
+    }
     if (S.log.length) {
       h += '<div class="card"><h3>آخر الأخبار</h3>'
         + S.log.slice(-6).reverse().map(function (l) { return '<div class="log">' + l + '</div>'; }).join('')
@@ -171,7 +200,7 @@ function drawView() {
   var k = SOON[tab];
   h += '<div class="soon"><span class="ic">' + k[0] + '</span><h3>' + k[1] + '</h3>'
     + '<p>' + k[2] + '</p><span class="item">لسه بيتبني — ' + k[3] + '</span></div>';
-  el('view').innerHTML = h;
+  el('view').innerHTML = h + '</div>';
 }
 
 function drawClock() {
@@ -216,11 +245,13 @@ document.addEventListener('click', function (ev) {
   if (t.dataset.pick) {
     var list = t.dataset.pick === 'gov' ? SETUP.government_types : SETUP.society_types;
     setupState[t.dataset.pick] = list[+t.dataset.i];
-    drawSetup();
+    el('artdefs').innerHTML = ART_DEFS;
+drawSetup();
   } else if (t.dataset.roll) {
     var names = t.dataset.roll === 'country' ? SETUP.suggested_country_names : SETUP.suggested_ruler_names;
     setupState[t.dataset.roll] = names[Math.floor(Math.random() * names.length)];
-    drawSetup();
+    el('artdefs').innerHTML = ART_DEFS;
+drawSetup();
   } else if (t.dataset.nav) {
     captureNames();
     if (t.dataset.nav === 'back') { setupState.step--; drawSetup(); }
@@ -251,4 +282,5 @@ function startGame() {
   drawGame();
 }
 
+el('artdefs').innerHTML = ART_DEFS;
 drawSetup();

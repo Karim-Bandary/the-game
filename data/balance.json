@@ -157,14 +157,20 @@
     "income_tax_coef": 2.3,
     "corporate_tax_coef": 33.0,
     "utility_bills_coef": 22.0,
-    "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))"
+    "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))",
+    "tax_free_below": 18
   },
   "food": {
     "agri_yield": 11.0,
     "world_price": 28,
     "consumption_per_million": 1.0,
     "price_smoothing": 0.55,
-    "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج"
+    "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج",
+    "price_base": 50,
+    "price_gap_coef": 6.0,
+    "price_inflation_coef": 0.9,
+    "price_inflation_free_below": 6.0,
+    "subsidy_coef": 0.22
   },
   "inflation": {
     "monthly_decay": 0.08,
@@ -185,10 +191,27 @@
     "approval_danger": 35,
     "stability_danger": 40,
     "boil_cap": 100,
-    "boil_cooldown": 7
+    "boil_cooldown": 7,
+    "boil_gain_coef": 0.8,
+    "boil_gain_base": 3.0,
+    "settle_months": 25
   },
   "population": {
     "monthly_growth_base": 0.0018,
     "health_penalty_coef": 0.001
+  },
+  "deficit": {
+    "operating_multiplier": 0.55,
+    "decay_multiplier": 2.0
+  },
+  "projects": {
+    "monthly_cost_each": 9
+  },
+  "stability": {
+    "base": 74,
+    "opposition_threshold": 55,
+    "opposition_coef": 0.8,
+    "inflation_coef": 0.6,
+    "smoothing": 0.22
   }
 }

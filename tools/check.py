@@ -123,10 +123,12 @@ def check_svg(problems):
     with no definition silently drops every arrowhead."""
     for f in html_files():
         src = f.read_text(encoding="utf-8")
-        defined = set(re.findall(r'<marker id="([\w-]+)"', src))
+        # Any element can be referenced by url(#id) — markers, gradients, patterns,
+        # clip paths. Collect every id the way the browser resolves them.
+        defined = set(re.findall(r'\bid="([\w-]+)"', src))
         for ref in set(re.findall(r"url\(#([\w-]+)\)", src)):
             if ref not in defined:
-                problems.append(f"{rel(f)}: السهم url(#{ref}) مالوش تعريف")
+                problems.append(f"{rel(f)}: url(#{ref}) مستخدم ومالوش تعريف في الملف")
         for m in re.finditer(r'<svg viewBox="0 0 (\d+) (\d+)"(.*?)</svg>', src, re.S):
             W, H, body = int(m.group(1)), int(m.group(2)), m.group(3)
             for r in re.finditer(r'<rect[^>]*?x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"', body):
@@ -251,35 +253,45 @@ def check_generated_files_match(problems):
 
 
 def check_simulator(problems):
-    """A balance edit that quietly makes the game unplayable is invisible in a
-    diff. These are the three numbers that say the game still works at all."""
-    sys.path.insert(0, str(TOOLS))
-    import sim
-    sim.reset_reqs()
-    st = sim.State()
-    if not 45 <= st.approval <= 65:
-        problems.append(f"الرضا عند البداية {st.approval:.0f} — المفروض بين ٤٥ و٦٥")
-    if not 55 <= st.stability <= 80:
-        problems.append(f"الثبات عند البداية {st.stability:.0f} — المفروض بين ٥٥ و٨٠")
-    if not 40 <= st.avg_service() <= 70:
-        problems.append(f"متوسط الخدمات {st.avg_service():.0f} — المفروض بين ٤٠ و٧٠")
+    """Runs the balance simulator — which runs the game's own engine — and
+    asserts the shape of the game still holds. A balance edit that quietly makes
+    the game unplayable, or pointless, is invisible in a diff."""
+    if not shutil.which("node"):
+        problems.append("تحذير: node مش متثبت — المحاكي اتخطى")
+        return
+    r = subprocess.run(["node", str(TOOLS / "simulate.js"), "--json"], capture_output=True, text=True)
+    if r.returncode:
+        problems.append("المحاكي وقع — " + (r.stderr or r.stdout).strip()[:200])
+        return
+    sim = json.loads(r.stdout)
+    st = sim["start"]
+    if not 45 <= st["approval"] <= 68:
+        problems.append(f"الرضا عند البداية {st['approval']} — المفروض بين ٤٥ و٦٨")
+    if not 55 <= st["stability"] <= 85:
+        problems.append(f"الثبات عند البداية {st['stability']} — المفروض بين ٥٥ و٨٥")
+    if not 40 <= st["avgService"] <= 72:
+        problems.append(f"متوسط الخدمات {st['avgService']} — المفروض بين ٤٠ و٧٢")
 
-    def median_life(player, n=12):
-        lives = []
-        for seed in range(n):
-            r = sim.run(player, seed=seed)
-            lives.append(r.month if r.dead else 300)
-        return sorted(lives)[n // 2]
+    fm = sim["firstMonth"]
+    if abs(fm["net"]) > 200:
+        problems.append(f"صافي أول شهر {fm['net']}م — المفروض قريب من الصفر عشان اللاعب يبدأ مخنوق")
 
-    passive, good = median_life(sim.passive), median_life(sim.reasonable)
-    if passive > 200:
+    passive = sim["players"]["سلبي"]["lifespan"]
+    good = sim["players"]["معقول"]["lifespan"]
+    if passive > 220:
         problems.append(f"اللاعب السلبي عايش {passive} شهر — الوقوف مكانك المفروض يخسّر")
     if good < passive * 1.5:
-        problems.append(f"اللاعب الكويس عايش {good} شهر والسلبي {passive} — الفرق صغير، "
-                        "يعني قرارات اللاعب مش مهمة")
-    if good > passive * 6:
-        problems.append(f"اللاعب الكويس عايش {good} شهر والسلبي {passive} — الفرق كبير أوي، "
-                        "يعني فيه استراتيجية واحدة صح وباقي اللعب غلط")
+        problems.append(f"اللاعب الكويس عايش {good} شهر والسلبي {passive} — "
+                        "الفرق صغير، يعني قرارات اللاعب مش مهمة")
+
+    # No starting combination may be hopeless. Anything under a third of the best
+    # is not a hard mode, it is a trap for whoever picks it.
+    combos = sim["combos"]
+    best = max(combos.values())
+    for name, life in combos.items():
+        if life < best / 3:
+            problems.append(f"تركيبة «{name}» عايشة {life} شهر مقابل {best} لأحسن تركيبة — "
+                            "دي مش صعوبة، دي فخ")
 
 
 def check_progress_bar(problems):

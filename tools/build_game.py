@@ -26,12 +26,14 @@ engine = engine.replace("__SETUP__", json.dumps(setup, ensure_ascii=False))
 
 page = (SRC / "index.html").read_text(encoding="utf-8")
 page = page.replace("__STYLE__", (SRC / "style.css").read_text(encoding="utf-8"))
+page = page.replace("__ART__", (SRC / "art.js").read_text(encoding="utf-8"))
 page = page.replace("__ENGINE__", engine)
 page = page.replace("__UI__", (SRC / "ui.js").read_text(encoding="utf-8"))
 
 # A leftover placeholder means a source moved and the bundle is broken in a way
 # that looks fine until someone opens it. Fail loudly here instead.
-leftovers = [m for m in ["__STYLE__", "__ENGINE__", "__UI__", "__BALANCE__", "__SETUP__"] if m in page]
+leftovers = [m for m in ["__STYLE__", "__ART__", "__ENGINE__", "__UI__",
+                         "__BALANCE__", "__SETUP__"] if m in page]
 if leftovers:
     raise SystemExit(f"البناء فشل: علامات ما اتملتش — {leftovers}")
 

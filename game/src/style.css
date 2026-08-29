@@ -92,7 +92,14 @@ input:focus{outline:none;border-color:var(--gold2)}
 .mtr .fl{height:100%;border-radius:2px;transition:width .4s,background .4s}
 .mtr.danger{animation:pulse 1.3s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
-.view{flex:1;overflow-y:auto;padding:14px;-webkit-overflow-scrolling:touch}
+.view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.band{position:relative;height:132px;overflow:hidden;background:var(--bg)}
+.band svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.band .ttl{position:absolute;right:14px;bottom:11px;font-size:17px;font-weight:700;
+  letter-spacing:.01em;text-shadow:0 2px 12px rgba(0,0,0,.9)}
+.band .sub{position:absolute;right:14px;bottom:-2px;font-size:10px;color:var(--dim);
+  text-shadow:0 1px 8px rgba(0,0,0,.9)}
+.pad{padding:14px}
 .nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #1e2431;
   background:var(--panel);flex:none;padding-bottom:env(safe-area-inset-bottom)}
 .nav button{background:none;border:0;padding:9px 2px 11px;color:var(--dim2);font-size:9px;
