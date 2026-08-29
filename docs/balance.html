@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ميزان الدولة</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#edf0e9; --surface:#f7f9f4; --surface2:#e4e9dd; --ink:#1a1f1b;
+    --muted:#5c6a5f; --rule:#cdd5c5; --rule2:#b3bfa8;
+    --seal:#155c4c; --gold:#966b12; --alert:#9a3325; --shadow:rgba(26,31,27,.09);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12160f; --surface:#1a1f18; --surface2:#232a20; --ink:#e4e9dc;
+      --muted:#93a08f; --rule:#333d2e; --rule2:#4a5742;
+      --seal:#5fb89e; --gold:#d9a94a; --alert:#e08878; --shadow:rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12160f; --surface:#1a1f18; --surface2:#232a20; --ink:#e4e9dc;
+    --muted:#93a08f; --rule:#333d2e; --rule2:#4a5742;
+    --seal:#5fb89e; --gold:#d9a94a; --alert:#e08878; --shadow:rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);
+    font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
+    font-size:16px;line-height:1.95;margin:0}
+  .doc{direction:rtl;text-align:right;max-width:1120px;margin:0 auto;padding:0 20px 90px}
+
+  .mast{padding:54px 0 30px;border-bottom:2px solid var(--ink);margin-bottom:6px}
+  .stamp{display:inline-block;font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;
+    font-weight:500;letter-spacing:.18em;color:var(--seal);border:1.5px solid var(--seal);
+    border-radius:3px;padding:5px 11px;margin-bottom:20px}
+  h1{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;
+    font-size:clamp(30px,6vw,46px);line-height:1.35;margin:0 0 14px;text-wrap:balance}
+  .sub{color:var(--muted);font-size:15.5px;max-width:62ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:24px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:600}
+
+  .wrap{display:grid;grid-template-columns:1fr;gap:0}
+  .rail{display:none}
+  @media(min-width:1000px){
+    .wrap{grid-template-columns:200px 1fr;gap:52px;align-items:start}
+    .rail{display:block;position:sticky;top:26px;padding-top:40px}
+  }
+  .rail div{font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;letter-spacing:.14em;
+    color:var(--muted);margin-bottom:14px}
+  .rail a{display:block;font-size:13px;color:var(--muted);text-decoration:none;
+    padding:3px 11px 3px 0;border-right:2px solid transparent;line-height:1.5}
+  .rail a:hover,.rail a:focus-visible{color:var(--seal);border-right-color:var(--seal)}
+  .rail a b{color:var(--rule2);font-weight:500;margin-left:7px;font-variant-numeric:tabular-nums}
+  .rail a.new b{color:var(--gold)}
+
+  section{padding-top:46px;scroll-margin-top:20px}
+  h2{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;font-size:23px;line-height:1.5;
+    margin:0 0 6px;display:flex;align-items:baseline;gap:12px;text-wrap:balance}
+  h2 .num{font-size:12px;font-weight:500;color:var(--seal);border:1.5px solid var(--rule2);
+    border-radius:4px;padding:2px 8px;flex:none;font-variant-numeric:tabular-nums}
+  h2 .new{color:var(--gold);border-color:var(--gold)}
+  .lede{color:var(--muted);font-size:15px;margin:0 0 22px;max-width:66ch}
+  h3{font-family:'Noto Kufi Arabic',sans-serif;font-size:16px;font-weight:500;
+    margin:30px 0 10px;color:var(--ink)}
+  p{max-width:68ch;margin:0 0 15px}
+  ul{max-width:68ch;margin:0 0 15px;padding-right:20px}
+  li{margin-bottom:7px}
+  strong{font-weight:600}
+  em{font-style:normal;color:var(--seal);font-weight:600}
+  hr{border:0;border-top:1px solid var(--rule);margin:44px 0 0}
+
+  .formula{background:var(--surface);border:1px solid var(--rule2);border-radius:8px;
+    padding:16px 18px;margin:18px 0;box-shadow:0 1px 0 var(--shadow)}
+  .formula .eq{font-family:'Noto Kufi Arabic',sans-serif;font-size:17px;font-weight:500;
+    color:var(--seal);line-height:1.8;text-wrap:balance}
+  .formula .why{font-size:13.5px;color:var(--muted);margin:9px 0 0;max-width:64ch;line-height:1.85}
+
+  .trap,.open,.risk{border-right:3px solid;border-radius:0 8px 8px 0;padding:13px 16px;
+    margin:18px 0;font-size:14.5px;line-height:1.85;max-width:68ch;background:var(--surface)}
+  .trap{border-color:var(--alert)}
+  .open{border-color:var(--gold)}
+  .risk{border-color:var(--rule2)}
+  .trap b,.open b,.risk b{display:block;font-family:'Noto Kufi Arabic',sans-serif;
+    font-size:11px;letter-spacing:.1em;margin-bottom:6px;font-weight:500}
+  .trap b{color:var(--alert)}
+  .open b{color:var(--gold)}
+  .risk b{color:var(--muted)}
+
+  .tw{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:540px;font-size:14px}
+  th{font-family:'Noto Kufi Arabic',sans-serif;font-weight:500;font-size:11.5px;letter-spacing:.05em;
+    color:var(--muted);text-align:right;padding:11px 14px;border-bottom:1px solid var(--rule2);
+    background:var(--surface2);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.7}
+  tr:last-child td{border-bottom:0}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--seal);font-weight:500}
+  td.k{font-weight:600;white-space:nowrap}
+
+  figure{margin:26px 0 10px}
+  .dgw{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;
+    background:var(--surface);padding:16px 14px}
+  .dgw svg{display:block;min-width:720px;width:100%;height:auto;color:var(--ink)}
+  .dg-box{fill:var(--surface2);stroke:var(--rule2);stroke-width:1.2}
+  .dg-key{fill:var(--surface2);stroke:var(--seal);stroke-width:1.8}
+  .dg-end{fill:var(--surface2);stroke:var(--alert);stroke-width:1.8}
+  .dg-t{fill:var(--ink);font-size:13px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .dg-s{fill:var(--muted);font-size:10.5px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .ln{fill:none;stroke:var(--rule2);stroke-width:1.4}
+  .ln-g{fill:none;stroke:var(--gold);stroke-width:1.6}
+  .ln-r{fill:none;stroke:var(--alert);stroke-width:1.6}
+  figcaption{font-size:13px;color:var(--muted);margin-top:11px;line-height:1.8;max-width:66ch}
+
+  ol.loop{counter-reset:s;list-style:none;padding:0;margin:20px 0;max-width:68ch}
+  ol.loop li{counter-increment:s;position:relative;padding:0 46px 16px 0;margin:0;
+    border-right:1px solid var(--rule)}
+  ol.loop li::before{content:counter(s);position:absolute;right:-13px;top:1px;width:26px;height:26px;
+    background:var(--surface);border:1px solid var(--rule2);border-radius:50%;
+    display:grid;place-items:center;font-size:11.5px;color:var(--seal);
+    font-variant-numeric:tabular-nums;font-weight:600}
+  ol.loop li:last-child{border-right-color:transparent;padding-bottom:0}
+  ol.loop li b{display:block;font-weight:600;margin-bottom:2px}
+  ol.loop li span{color:var(--muted);font-size:14px;line-height:1.8}
+
+  code{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    background:var(--surface2);padding:1px 6px;border-radius:4px;direction:ltr;display:inline-block}
+  pre{background:var(--surface);border:1px solid var(--rule);border-radius:8px;
+    padding:15px 17px;overflow-x:auto;direction:ltr;text-align:left;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.75;margin:18px 0}
+  a{color:var(--seal)}
+  :focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="doc">
+<header class="mast">
+  <span class="stamp">البند ٢ من الخطة · جدول الأرقام</span>
+  <h1>ميزان الدولة</h1>
+  <p class="sub">كل رقم في اللعبة بقيمته الابتدائية، ومن فين جه، وإيه اللي بيحصل لو غيّرناه.
+  الأرقام دي اتجرّبت في محاكي شغّل اللعبة ١٢٠ مرة قبل ما تشوفها.</p>
+  <div class="meta">
+    <span>النسخة <b>١٫٠</b></span>
+    <span>مصدر الأرقام <b>data/balance.json</b></span>
+    <span>الحالة <b>محتاجة مراجعتك بعين محاسب</b></span>
+  </div>
+</header>
+<div class="wrap">
+  <nav class="rail" aria-label="فهرس">
+    <div>الفهرس</div>
+    <a href="#u"><b>١</b>الوحدات</a>
+    <a href="#s"><b>٢</b>حالة البداية</a>
+    <a href="#g"><b>٣</b>المحافظات</a>
+    <a href="#v"><b>٤</b>الخدمات</a>
+    <a href="#i"><b>٥</b>الدخل</a>
+    <a href="#f"><b>٦</b>الغذاء</a>
+    <a href="#n"><b>٧</b>التضخم</a>
+    <a href="#m"><b>٨</b>الرضا والغليان</a>
+    <a href="#t"><b>٩</b>نتيجة المحاكاة</a>
+    <a href="#q"><b>١٠</b>مراجعتك</a>
+  </nav>
+  <main>
+<section id="u">
+  <h2><span class="num">١</span>الوحدات والمقياس</h2>
+  <p class="lede">قبل أي رقم — الأرقام دي بتقيس إيه.</p>
+  <div class="tw"><table>
+    <thead><tr><th>الوحدة</th><th>المقياس</th><th>مثال</th></tr></thead>
+    <tbody>
+      <tr><td class="k">الفلوس</td><td class="n">مليون</td><td>«٤٠٠م» = تكلفة بناء مستشفى</td></tr>
+      <tr><td class="k">السكان</td><td class="n">مليون نسمة</td><td>الدولة بتبدأ بـ١٢ مليون</td></tr>
+      <tr><td class="k">المؤشرات</td><td class="n">٠ – ١٠٠</td><td>رضا · ثبات · ولاء · كفاءة · مستوى خدمة</td></tr>
+      <tr><td class="k">التضخم</td><td class="n">٪ سنوي</td><td>بيبدأ ٦٪ · الانهيار عند ١٥٠٪</td></tr>
+      <tr><td class="k">الوقت</td><td class="n">شهر</td><td>كل حسابات اللعبة بتتنفذ مرة كل شهر</td></tr>
+    </tbody>
+  </table></div>
+  <div class="risk"><b>ليه المليون</b>
+  عشان الأرقام تفضل قابلة للقراءة (٤٠٠ مش ٤٠٠٬٠٠٠٬٠٠٠) وفي نفس الوقت تحس إنها ميزانية دولة. وكل الحسابات بأرقام صحيحة — مفيش كسور تظهر للاعب أبدًا.</div>
+</section><hr>
+<section id="s">
+  <h2><span class="num">٢</span>حالة البداية</h2>
+  <p class="lede">الشهر صفر. دولة شغالة بالعافية — لا منهارة فتحس إنك مظلوم، ولا مستقرة فتزهق.</p>
+  <div class="tw"><table>
+    <thead><tr><th>المؤشر</th><th>القيمة</th><th>يعني إيه</th></tr></thead>
+    <tbody>
+      <tr><td class="k">الخزينة</td><td class="n">٢,٤٠٠م</td><td>حوالي تلات شهور مصروفات احتياطي</td></tr>
+      <tr><td class="k">الرضا الشعبي</td><td class="n">٥٢</td><td>فوق خط الخطر (٣٥) بـ١٧ نقطة بس</td></tr>
+      <tr><td class="k">الثبات السياسي</td><td class="n">٦٨</td><td>مريح — الخطر بيبدأ تحت ٤٠</td></tr>
+      <tr><td class="k">متوسط الخدمات</td><td class="n">٥٦</td><td>نص الدولة شغال</td></tr>
+      <tr><td class="k">التضخم</td><td class="n">٦٪</td><td>مقبول — الوجع بيبدأ فوق ٩٪</td></tr>
+      <tr><td class="k">ضريبة الدخل</td><td class="n">٢٠٪</td><td>الناس ما بتوجعش تحت ١٨٪</td></tr>
+      <tr><td class="k">تمويل الوزارات</td><td class="n">١١٨٪</td><td>من طلب كل وزارة — الفاتورة ٥٦٦.٤م شهريًا</td></tr>
+      <tr><td class="k">كفاءة الوزرا</td><td class="n">٦٥</td><td>يعني التشغيل الفعلي ٧٦.٧٪ بس</td></tr>
+      <tr><td class="k">رصيدك الشخصي</td><td class="n">٠</td><td>لسه</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="formula">
+    <div class="eq">١١٨٪ تمويل × ٦٥٪ كفاءة = ٧٦.٧٪ تشغيل</div>
+    <p class="why">دي أهم حسبة في اللعبة. عشان توصل تشغيل ١٠٠٪ بوزير كفاءته ٦٥٪، لازم تموّل <strong>١٥٤٪</strong> — وده مستحيل على كل الوزارات في نفس الوقت بالدخل اللي عندك. <strong>الطريق الوحيد لدولة شغالة هو وزرا أكفأ، مش فلوس أكتر.</strong> ودي الرسالة اللي عايزين اللاعب يكتشفها بنفسه بعد سنتين لعب.</p>
+  </div>
+
+  <h3>مستوى كل خدمة عند البداية</h3>
+  <div class="tw"><table>
+    <thead><tr><th>الخدمة</th><th>المستوى القومي</th><th>الحالة</th></tr></thead>
+    <tbody><tr><td class="k">💧 المياه</td><td class="n">٦٥</td><td>كويسة</td></tr><tr><td class="k">⚡ الكهربا</td><td class="n">٦١</td><td>كويسة</td></tr><tr><td class="k">🚰 الصرف</td><td class="n">٦٤</td><td>كويسة</td></tr><tr><td class="k">🏥 الصحة</td><td class="n">٦١</td><td>كويسة</td></tr><tr><td class="k">🎓 التعليم</td><td class="n">٥٤</td><td>متوسطة</td></tr><tr><td class="k">👮 الشرطة</td><td class="n">٤٨</td><td>متوسطة</td></tr><tr><td class="k">🚒 الإسعاف</td><td class="n">٣٢</td><td>سيئة</td></tr></tbody></table></div>
+  <div class="trap"><b>مقصود</b>
+  الإسعاف والشرطة بيبدأوا أسوأ حاجة. ليه: عشان أول أزمة تيجي للاعب تكون أزمة أمن أو أزمة إسعاف — حاجة مفهومة وسهل يربطها بقرار، مش أزمة تضخم مجردة.</div>
+</section><hr>
+<section id="g">
+  <h2><span class="num">٣</span>المحافظات الخمسة</h2>
+  <p class="lede">مجموع سكانهم هو الدولة. وكل واحدة ليها مشكلة مختلفة عن الباقيين.</p>
+  <div class="tw"><table>
+    <thead><tr><th>المحافظة</th><th>السكان</th><th>الثروة</th><th>الشباب</th><th>رضاها عند البداية</th></tr></thead>
+    <tbody><tr><td class="k">العاصمة</td><td class="n">4.2م</td><td class="n">×1.3</td><td class="n">×0.85</td><td class="n">٦٠</td></tr><tr><td class="k">الصناعية</td><td class="n">2.4م</td><td class="n">×1.1</td><td class="n">×1.0</td><td class="n">٥٥</td></tr><tr><td class="k">الزراعية</td><td class="n">2.2م</td><td class="n">×0.8</td><td class="n">×1.05</td><td class="n">٤٩</td></tr><tr><td class="k">الجنوب</td><td class="n">2.6م</td><td class="n">×0.6</td><td class="n">×1.35</td><td class="n">٣٧</td></tr><tr><td class="k">الحدودية</td><td class="n">0.6م</td><td class="n">×0.75</td><td class="n">×1.0</td><td class="n">٦٠</td></tr></tbody></table></div>
+  <div class="formula">
+    <div class="eq">الثروة بتقسّم الوجع · الشباب بيضرب النمو السكاني</div>
+    <p class="why">محافظة ثروتها ×١٫٣ بتتحمل غلاء الأسعار والضرايب أحسن — نفس الزيادة توجعها أقل. ومحافظة شبابها ×١٫٣٥ سكانها بيزيدوا أسرع، يعني <strong>خدماتها بتتآكل أسرع حتى لو ما عملتش حاجة غلط</strong>. عشان كده الجنوب هو دايمًا أول محافظة تنفجر: أفقر (0.6) وأصغر سنًا (1.35) في نفس الوقت.</p>
+  </div>
+
+  <h3>المنشآت الموجودة عند البداية</h3>
+  <div class="tw"><table>
+    <thead><tr><th>المحافظة</th><th>💧</th><th>⚡</th><th>🚰</th><th>🏥</th><th>🎓</th><th>👮</th><th>🚒</th></tr></thead><tbody><tr><td class="k">العاصمة</td><td class="n">٣</td><td class="n">٢</td><td class="n">٢</td><td class="n">٤</td><td class="n">٥</td><td class="n">٦</td><td class="n">٤</td></tr><tr><td class="k">الصناعية</td><td class="n">٢</td><td class="n">١</td><td class="n">١</td><td class="n">٢</td><td class="n">٣</td><td class="n">٣</td><td class="n">٢</td></tr><tr><td class="k">الزراعية</td><td class="n">١</td><td class="n">١</td><td class="n">١</td><td class="n">٢</td><td class="n">٢</td><td class="n">٢</td><td class="n">٢</td></tr><tr><td class="k">الجنوب</td><td class="n">١</td><td class="n">١</td><td class="n">١</td><td class="n">١</td><td class="n">٣</td><td class="n">٣</td><td class="n">١</td></tr><tr><td class="k">الحدودية</td><td class="n">١</td><td class="n">١</td><td class="k">—</td><td class="n">١</td><td class="n">١</td><td class="n">١</td><td class="n">١</td></tr></tbody></table></div>
+  <div class="risk"><b>اقرا الجدول ده كخريطة مشاكل</b>
+  الحدودية مالهاش صرف صحي خالص. الجنوب عنده مستشفى واحد لـ٢٫٦ مليون. العاصمة مخدومة في كل حاجة. <strong>ده مش عشوائي — ده أول درس هيتعلمه اللاعب:</strong> المتوسط القومي بيخبّي إن فيه ناس عايشة من غير صرف صحي.</div>
+</section><hr>
+<section id="v">
+  <h2><span class="num">٤</span>الخدمات السبعة</h2>
+  <p class="lede">لكل خدمة ست أرقام. الأربعة الأولانيين بيحكموا البناء، والاتنين الآخرين بيحكموا التشغيل.</p>
+  <div class="tw"><table>
+    <thead><tr><th>الخدمة</th><th>المنشأة بتخدم</th><th>تكلفة البناء</th><th>مدة الإنشاء</th>
+    <th>بتزوّد المصروف</th><th>طلب الوزارة</th><th>وزنها في الرضا</th></tr></thead>
+    <tbody><tr><td class="k">💧 المياه</td><td class="n">1.5م نسمة</td><td class="n">٥٢٠م</td><td class="n">٦ شهور</td><td class="n">+٩م/شهر</td><td class="n">٦٠م</td><td class="n">١٦٪</td></tr><tr><td class="k">⚡ الكهربا</td><td class="n">1.8م نسمة</td><td class="n">٩٠٠م</td><td class="n">١١ شهور</td><td class="n">+١٦م/شهر</td><td class="n">١٠٥م</td><td class="n">١٥٪</td></tr><tr><td class="k">🚰 الصرف</td><td class="n">2.0م نسمة</td><td class="n">٦١٠م</td><td class="n">٩ شهور</td><td class="n">+٨م/شهر</td><td class="n">٤٥م</td><td class="n">١١٪</td></tr><tr><td class="k">🏥 الصحة</td><td class="n">1.0م نسمة</td><td class="n">٤٠٠م</td><td class="n">٨ شهور</td><td class="n">+٧م/شهر</td><td class="n">٨٢م</td><td class="n">١٧٪</td></tr><tr><td class="k">🎓 التعليم</td><td class="n">0.6م نسمة</td><td class="n">١٨٠م</td><td class="n">٤ شهور</td><td class="n">+٦م/شهر</td><td class="n">٩٥م</td><td class="n">١٤٪</td></tr><tr><td class="k">👮 الشرطة</td><td class="n">0.5م نسمة</td><td class="n">١٥٠م</td><td class="n">٣ شهور</td><td class="n">+٥م/شهر</td><td class="n">٥٨م</td><td class="n">١٥٪</td></tr><tr><td class="k">🚒 الإسعاف</td><td class="n">0.5م نسمة</td><td class="n">١٢٠م</td><td class="n">٣ شهور</td><td class="n">+٤م/شهر</td><td class="n">٣٥م</td><td class="n">١٢٪</td></tr><tr><td class="k">الإجمالي</td><td></td><td></td><td></td><td></td>
+      <td class="n">٤٨٠م</td><td class="n">١٠٠٪</td></tr>
+    </tbody></table></div>
+
+  <div class="formula">
+    <div class="eq">كل منشأة بتبنيها بتزوّد طلب وزارتها للأبد</div>
+    <p class="why">تبني مستشفى بـ٤٠٠م مرة واحدة، وطلب وزارة الصحة بيزيد +٧م <strong>كل شهر بعد كده</strong>. يعني تكلفة المستشفى الحقيقية على مدى ١٠ سنين = ٤٠٠ + (٧×١٢٠) = <strong>١,٢٤٠م</strong>. <em>ودي الحسبة اللي هتخلي اللاعب يفكر مرتين قبل ما يبني.</em></p>
+  </div>
+
+  <div class="trap"><b>لاحظ الكهربا</b>
+  أغلى منشأة (٩٠٠م) وأطول مدة (١١ شهر) وأكبر طلب شهري (١٠٥م). وهي كمان اللي بتحدد <strong>دخلك من ضرايب الشركات</strong>. يعني قرار محطة الكهربا هو أكبر قرار مالي في اللعبة: بتدفع دلوقتي وبتقبض بعد سنة.</div>
+</section><hr>
+<section id="i">
+  <h2><span class="num">٥</span>الدخل</h2>
+  <p class="lede">تلات مصادر، وكل واحد له تمن سياسي مختلف.</p>
+  <div class="tw"><table>
+    <thead><tr><th>المصدر</th><th>عند البداية</th><th>الرافعة</th><th>التمن</th></tr></thead>
+    <tbody>
+      <tr><td class="k">ضريبة الدخل</td><td class="n">≈٣٧٠م</td><td>نسبة الضريبة (٢٠٪)</td>
+          <td>كل ١٪ فوق ١٨٪ بتاخد 1.6 نقطة رضا</td></tr>
+      <tr><td class="k">ضريبة الشركات</td><td class="n">≈٢٦٠م</td><td>مستوى الكهربا</td>
+          <td>مفيش تمن مباشر — بس محتاجة استثمار طويل</td></tr>
+      <tr><td class="k">فواتير الخدمات</td><td class="n">≈٢٦٠م</td><td>سعر الفواتير (٥٠)</td>
+          <td>0.8 نقطة رضا لكل نقطة سعر — بيتحس كل شهر في البيت</td></tr>
+      <tr><td class="k">طباعة الفلوس</td><td class="n">٠</td><td>محافظ البنك المركزي</td>
+          <td>+2.2٪ تضخم لكل ٣٥٠م</td></tr>
+    </tbody>
+  </table></div>
+  <div class="formula">
+    <div class="eq">الدخل والتكاليف الاتنين بيتضربوا في مؤشر الأسعار</div>
+    <p class="why">التضخم بيرفع دخلك زي ما بيرفع مصاريفك — فمش هو لوحده اللي بيفلّسك. اللي بيفلّسك إن <strong>الدعم والاستيراد</strong> بيكبروا أسرع من الدخل، وإن <strong>منشآتك القديمة</strong> بتبقى أغلى في التشغيل. التضخم في اللعبة دي مش سارق، ده <em>مُتعِب</em>.</p>
+  </div>
+</section><hr>
+<section id="f">
+  <h2><span class="num">٦</span>سوق الغذاء</h2>
+  <p class="lede">أسرع نظام في اللعبة. بينفجر في شهر، وبيهدى في شهر — لو دفعت.</p>
+  <div class="formula">
+    <div class="eq">الإنتاج = ١١ × (مستوى مياه المحافظة الزراعية ÷ ٦٠)</div>
+    <p class="why">عند البداية مياه الزراعية حوالي ٥٥، يعني الإنتاج ≈١٠ وحدات والاستهلاك ١٢ — <strong>عجز حوالي وحدتين</strong>، بتتستورد بـ٢٨م للوحدة ≈ ٦٠م شهريًا. <em>يعني الدولة بتبدأ معتمدة على الاستيراد شوية، ولو أهملت مياه محافظة واحدة الرقم ده بيتضاعف.</em></p>
+  </div>
+  <div class="formula">
+    <div class="eq">سعر الغذاء = ٥٠ + (العجز × ٦) + (التضخم − ٦) × ٠٫٩ − (الدعم × ٠٫٢٢)</div>
+    <p class="why">الدعم بيبدأ ٦٠م شهريًا وبينزّل السعر ١٣ نقطة. والسعر بيتحرك بسرعة 0.55 — يعني بيوصل لقيمته الجديدة في شهر واحد تقريبًا، <strong>مش زي الخدمات اللي بتاخد تلات شهور</strong>. ده الفرق اللي بيخلي أزمة الغذاء تحس مختلفة عن أزمة الخدمات.</p>
+  </div>
+  <div class="trap"><b>الرقم اللي محتاج مراجعتك</b>
+  الدعم بـ٦٠م بينزّل السعر ١٣ نقطة، والنقطة بتساوي 0.85 نقطة رضا. يعني <strong>٥.٣م تقريبًا لكل نقطة رضا</strong>. قارن ده بتكلفة بناء مستشفى: هل الدعم رخيص أوي فيبقى الحل الوحيد المنطقي؟ ده أهم سؤال في الجدول كله.</div>
+</section><hr>
+<section id="n">
+  <h2><span class="num">٧</span>التضخم</h2>
+  <p class="lede">أبطأ نظام في اللعبة، وأصعب واحد ترجع منه.</p>
+  <div class="tw"><table>
+    <thead><tr><th>الرقم</th><th>القيمة</th><th>المعنى</th></tr></thead>
+    <tbody>
+      <tr><td class="k">البداية</td><td class="n">٦٪</td><td>سنويًا</td></tr>
+      <tr><td class="k">الأرضية</td><td class="n">٣٪</td><td>مش بينزل تحتها مهما عملت</td></tr>
+      <tr><td class="k">النزول الطبيعي</td><td class="n">−0.08٪/شهر</td><td>≈١٪ في السنة — <strong>بطيء جدًا</strong></td></tr>
+      <tr><td class="k">طباعة ٣٥٠م</td><td class="n">+2.2٪</td><td>يعني تحتاج سنتين ونص عشان تختفي</td></tr>
+      <tr><td class="k">العجز في الخزينة</td><td class="n">+1.4٪/شهر</td><td>أسرع مصدر للتضخم</td></tr>
+      <tr><td class="k">الوجع يبدأ فوق</td><td class="n">٩٪</td><td>1.5 نقطة رضا لكل ١٪ زيادة</td></tr>
+      <tr><td class="k">الانهيار</td><td class="n">١٥٠٪</td><td>نهاية اللعبة، نهاية تانية غير العزل</td></tr>
+    </tbody>
+  </table></div>
+  <div class="formula">
+    <div class="eq">تطبع في شهر · تدفع تمنها سنتين ونص</div>
+    <p class="why">النسبة دي (+2.2٪ مقابل −0.08٪ شهريًا) هي كل الرسالة. طباعة الفلوس مش قرار غلط — دي قرار <strong>بتستلفه من نفسك</strong>. مرة تنفع. تلات مرات في سنة تخلي اللعبة كلها أغلى عليك للأبد.</p>
+  </div>
+</section><hr>
+<section id="m">
+  <h2><span class="num">٨</span>الرضا والثبات والغليان</h2>
+  <p class="lede">إزاي كل ده بيتحول لغضب، وإمتى الغضب بيبقى شغب.</p>
+  <div class="formula">
+    <div class="eq">رضا المحافظة = خدماتها − (وجع الضرايب + وجع الغذاء) ÷ ثروتها − وجع التضخم</div>
+    <p class="why">لاحظ إن وجع الضرايب والغذاء <strong>بيتقسم على ثروة المحافظة</strong> (فالغني بيتحمل)، لكن وجع التضخم <strong>ما بيتقسمش</strong> — التضخم بيوجع الكل بالتساوي. ده مقصود: التضخم هو الحاجة الوحيدة اللي ما ينفعش تحمي منها فئة معينة.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>الرقم</th><th>القيمة</th><th>ليه كده</th></tr></thead>
+    <tbody>
+      <tr><td class="k">سرعة تحرك الرضا</td><td class="n">0.3</td><td>يوصل لقيمته الجديدة في ٣ شهور تقريبًا</td></tr>
+      <tr><td class="k">سرعة تحرك الثبات</td><td class="n">0.22</td><td>أبطأ من الرضا — السياسة أبطأ من الشارع</td></tr>
+      <tr><td class="k">خط خطر الرضا</td><td class="n">٣٥</td><td>تحته الغليان بيبدأ يتراكم</td></tr>
+      <tr><td class="k">خط خطر الثبات</td><td class="n">٤٠</td><td>لازم الاتنين تحت الخط مع بعض</td></tr>
+      <tr><td class="k">الغليان يفجّر عند</td><td class="n">١٠٠</td><td>حوالي ٦–٨ شهور وحشة متتالية</td></tr>
+      <tr><td class="k">الغليان بيهدى</td><td class="n">−٧/شهر</td><td>في الشهور الكويسة — يعني تقدر تنجو</td></tr>
+    </tbody>
+  </table></div>
+  <div class="risk"><b>أهم قرار هنا: لازم الاتنين مع بعض</b>
+  الشغب مش بيقوم بالرضا الواطي لوحده. لازم <strong>رضا واطي + ثبات واطي</strong> في نفس الشهر. يعني رئيس شعبيته صفر بس ماسك السياسة كويس ممكن يعيش — ورئيس محبوب بس حكومته متفككة ممكن يقع. <em>ودي بالظبط الحقيقة السياسية اللي عايزين اللاعب يحسها.</em></div>
+</section><hr>
+<section id="t">
+  <h2><span class="num">٩</span>نتيجة المحاكاة</h2>
+  <p class="lede">شغّلت اللعبة ١٢٠ مرة بتلات أنماط لعب مختلفة. دي النتيجة، ودي اللي بتقول إن الأرقام معقولة.</p>
+  <div class="tw"><table>
+    <thead><tr><th>نمط اللعب</th><th>عاش قد إيه</th><th>الحكم</th></tr></thead>
+    <tbody>
+      <tr><td class="k">سلبي — ما بيعملش حاجة</td><td class="n">١٢٥ شهر ≈ ١٠ سنين</td>
+          <td>الدولة بتتآكل لوحدها من نمو السكان. <strong>الوقوف مكانك مش خيار.</strong></td></tr>
+      <tr><td class="k">معقول — بيصلّح الأسوأ</td><td class="n">٢٨٧ شهر ≈ ٢٤ سنة</td>
+          <td>ضعف عمر السلبي ونص. <strong>المهارة بتفرق فعلاً.</strong></td></tr>
+      <tr><td class="k">حرامي — بيسرق ويطبع</td><td class="n">١٢٥ شهر ≈ ١٠ سنين</td>
+          <td>عمر قصير، جيب مليان. <strong>مقايضة حقيقية مش عقوبة.</strong></td></tr>
+    </tbody>
+  </table></div>
+  <div class="risk"><b>اللي المحاكاة بتقوله</b>
+  الفرق بين أسوأ لاعب وأحسن لاعب هو <strong>٢ أضعاف العمر</strong>. لو الفرق كان أقل من الضعف، كان معنى كده إن قراراتك مش مهمة. ولو كان عشر أضعاف، كان معناه إن فيه استراتيجية واحدة صح وباقي اللعب غلط.</div>
+  <div class="open"><b>اللي المحاكاة ما بتقولوش</b>
+  دي بتختبر <strong>الاقتصاد بس</strong> — الوزرا والأحزاب والفضايح والأحداث لسه مش فيها، لأنهم لسه ما اتصمموش بالأرقام. كل طبقة هنبنيها هتتضاف للمحاكي وهنعيد الاختبار. <strong>المحاكي ده هو أداتنا الأساسية ضد إني مش شايف الشاشة.</strong></div>
+</section><hr>
+<section id="q">
+  <h2><span class="num">١٠</span>محتاج مراجعتك — بعين محاسب</h2>
+  <p class="lede">دول الأسئلة اللي أنا مش قادر أجاوبها لوحدي، وإجابتك هتغيّر أرقام كتير.</p>
+  <div class="open"><b>١ — نسبة الدخل للمصروف</b>
+  الدولة بتبدأ بدخل ≈٨٩٠م ومصروف ≈٨٧٠م، يعني فايض ≈٢٠م بس (٢٪). ده مقصود عشان تحس إنك مخنوق من أول يوم. <strong>هل ٢٪ ضيق أوي ولا مظبوط؟</strong></div>
+  <div class="open"><b>٢ — الاحتياطي</b>
+  الخزينة بتبدأ بـ٢,٤٠٠م = حوالي ٣ شهور مصروفات. <strong>كافي إنك تغلط مرتين وتتعلم، ولا قليل أوي؟</strong></div>
+  <div class="open"><b>٣ — تكلفة المستشفى الحقيقية</b>
+  ٤٠٠م بناء + ٧م شهريًا للأبد. على ١٠ سنين = ١,٢٤٠م. <strong>هل نسبة التشغيل للبناء دي واقعية في إحساسها؟</strong></div>
+  <div class="open"><b>٤ — الدعم مقابل البناء</b>
+  الدعم بيشتري رضا فوري ورخيص. البناء بيشتري رضا دايم وغالي. <strong>هل الدعم رخيص أوي لدرجة إن اللاعب الذكي هيعتمد عليه بس؟</strong> ده أخطر خلل ممكن يحصل في الميزان.</div>
+  <div class="open"><b>٥ — الضرايب</b>
+  كل ١٪ ضريبة بيجيب ≈١٨م ويكلف 1.6 نقطة رضا. <strong>حاسس إن السعر ده عادل؟</strong></div>
+  <div class="open"><b>٦ — الأرقام نفسها</b>
+  لو أي رقم في الملف ده حسّه غلط بالنسبة لك — قوله. الأرقام دي كلها في ملف واحد (<code>balance.json</code>) وتغييرها دقيقة شغل، والمحاكي هيقول لنا فورًا التغيير عمل إيه.</div>
+</section><hr>
+
+<section>
+  <h2><span class="num">✓</span>اللي بعده</h2>
+  <p>بعد ما تراجع الأرقام دي، البند ٣: <strong>حساب GitHub والمستودع</strong> — وبعده على طول مسار البناء اللي هيديك رابط تفتحه من موبايلك. ومن هناك كل بند بيبقى حاجة تلعبها بإيدك.</p>
+</section>
+  </main>
+</div>
+</div>
+</body>
+</html>

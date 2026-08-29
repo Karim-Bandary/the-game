@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>شاشة الميزانية والخدمات</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:#0d0f14;color:#e8e3d8;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px 12px 40px}
+  .note{max-width:420px;text-align:center;color:#7d8697;font-size:13px;line-height:1.9;margin-bottom:14px}
+
+  .phone{width:100%;max-width:390px;background:linear-gradient(180deg,#161a22,#0f1219);
+         border:1px solid #2a3040;border-radius:32px;padding:18px 14px;position:relative;
+         box-shadow:0 24px 60px rgba(0,0,0,.6)}
+
+  .hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .hdr .t{font-size:13px;color:#8b93a5}
+  .hdr .t b{color:#e8c87a}
+  .ap{font-size:11px;color:#8b93a5;background:#1a1f2b;border:1px solid #2a3040;
+      border-radius:20px;padding:5px 10px}
+  .ap b{color:#8ee0ab}
+
+  /* Treasury strip: the four numbers the player checks every single month */
+  .treas{background:#141922;border:1px solid #252c3b;border-radius:14px;padding:11px 12px;margin-bottom:6px}
+  .trow{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;color:#9aa3b6}
+  .trow b{font-variant-numeric:tabular-nums}
+  .pos{color:#68d094}.neg{color:#e07575}.gold{color:#e8c87a}
+  .sep{height:1px;background:#252c3b;margin:6px 0}
+  .secret{display:flex;justify-content:space-between;font-size:11.5px;color:#7a6a4a;padding-top:2px}
+
+  .tabs{display:flex;gap:6px;margin:12px 0 8px}
+  .tab{flex:1;text-align:center;font-size:12px;padding:8px 4px;border-radius:9px;
+       background:#141922;border:1px solid #252c3b;color:#7d8697;cursor:pointer}
+  .tab.on{background:#1e2532;color:#e8c87a;border-color:#3a4457}
+
+  /* Service rows */
+  .svc{background:#141922;border:1px solid #232a38;border-radius:13px;
+       padding:10px 11px;margin-bottom:7px;cursor:pointer;transition:.15s}
+  .svc:active{background:#1a2130}
+  .sline{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .sico{font-size:17px;width:22px;text-align:center}
+  .snm{flex:1;font-size:13.5px}
+  .slvl{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+  .scost{font-size:10.5px;color:#6f7891;margin-right:6px}
+  .bars{display:flex;gap:6px;align-items:center}
+  .bwrap{flex:1}
+  .blbl{font-size:9px;color:#5d667a;margin-bottom:3px;display:block}
+  .bar{height:4px;background:#0d1017;border-radius:3px;overflow:hidden}
+  .fl{height:100%;border-radius:3px;transition:width .4s}
+  .cov{background:#4a7fb5}.opr{background:#c9a24b}
+
+  /* Build queue */
+  .queue{background:#141922;border:1px dashed #3a4457;border-radius:13px;padding:10px 11px;margin-top:10px}
+  .qh{font-size:11px;color:#7d8697;margin-bottom:7px}
+  .qi{display:flex;justify-content:space-between;font-size:12px;color:#b9b2a2;padding:3px 0}
+  .qi span:last-child{color:#e8c87a;font-size:11px}
+
+  .next{width:100%;margin-top:12px;padding:14px;border-radius:14px;border:1px solid #2c4a38;
+        background:#182620;color:#8ee0ab;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer}
+  .next:active{transform:scale(.98)}
+
+  /* Detail sheet */
+  .ovl{position:fixed;inset:0;background:rgba(5,7,11,.72);display:none;
+       align-items:flex-end;justify-content:center;z-index:9;padding:10px}
+  .ovl.on{display:flex}
+  .sheet{width:100%;max-width:390px;background:#171c26;border:1px solid #2e3648;
+         border-radius:20px;padding:18px 16px 16px;max-height:88vh;overflow-y:auto}
+  .sh{display:flex;align-items:center;gap:9px;margin-bottom:14px}
+  .sh .ic{font-size:24px}
+  .sh .nm{font-size:16px;font-weight:700;flex:1}
+  .x{color:#6f7891;font-size:20px;cursor:pointer;padding:0 6px}
+
+  .calc{background:#10141c;border:1px solid #232a38;border-radius:12px;padding:12px;margin-bottom:13px;font-size:12.5px}
+  .cr{display:flex;justify-content:space-between;padding:4px 0;color:#9aa3b6}
+  .cr b{font-variant-numeric:tabular-nums;color:#ddd8cc}
+  .ceq{border-top:1px solid #252c3b;margin-top:7px;padding-top:8px;font-size:13.5px;color:#e8e3d8}
+  .ceq b{color:#e8c87a}
+
+  .warn{background:#1d1712;border:1px solid #4a3a22;border-radius:11px;padding:10px;
+        font-size:11.5px;line-height:1.8;color:#c9a97a;margin-bottom:13px}
+
+  .opt{width:100%;text-align:right;background:#1a1f2b;border:1px solid #2a3040;border-radius:13px;
+       padding:12px;margin-bottom:8px;font-family:inherit;color:#e8e3d8;font-size:13.5px;cursor:pointer}
+  .opt:active{background:#212838}
+  .opt .d{display:block;font-size:11px;color:#7d8697;margin-top:5px;line-height:1.7}
+  .opt.build{border-color:#2c3f5a}
+  .opt.cut{border-color:#4a2f33}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e2532;
+         border:1px solid #3a4457;color:#e8e3d8;padding:11px 18px;border-radius:12px;font-size:12.5px;
+         opacity:0;transition:.3s;pointer-events:none;z-index:20;text-align:center;max-width:330px;line-height:1.7}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="note">شاشة الميزانية والخدمات — دوس على أي خدمة تشوف الحسبة والقرارات.</div>
+
+<div class="phone">
+
+  <div class="hdr">
+    <div class="t">🏛️ الشهر <b>١٤</b> · السنة <b>٢</b></div>
+    <div class="ap">طاقة القرارات <b>٤/٦</b></div>
+  </div>
+
+  <div class="treas">
+    <div class="trow"><span>الخزينة</span><b class="gold">٢٬٣٤٠ م</b></div>
+    <div class="sep"></div>
+    <div class="trow"><span>الدخل الشهري (ضرايب + فواتير)</span><b class="pos">+٨٩٠ م</b></div>
+    <div class="trow"><span>المصروف الشهري (تشغيل + مرتبات)</span><b class="neg">−٨١٢ م</b></div>
+    <div class="trow" style="color:#ddd8cc"><span>الصافي</span><b class="pos">+٧٨ م</b></div>
+    <div class="sep"></div>
+    <div class="secret"><span>💼 رصيدك الشخصي</span><b>٤٥ م</b></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on">الخدمات</div>
+    <div class="tab">الدخل</div>
+    <div class="tab">الوزراء</div>
+  </div>
+
+  <div id="list"></div>
+
+  <div class="queue">
+    <div class="qh">🏗️ تحت الإنشاء</div>
+    <div class="qi"><span>محطة مياه — الشرق</span><span>باقي ٥ شهور</span></div>
+    <div class="qi"><span>٤ مدارس — الجنوب</span><span>باقي ٢ شهر</span></div>
+  </div>
+
+  <button class="next">الشهر الجاي ⟵</button>
+
+</div>
+
+<div class="ovl" id="ovl" onclick="if(event.target===this)close_()">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Service model: coverage comes from BUILT capacity vs population,
+// operating comes from how much of the required monthly budget is actually funded.
+// Keeping them separate is the whole point — it creates the two traps
+// (built-but-unfunded, funded-but-undersized) that make budgeting a real decision.
+var POP = 12.0; // millions
+
+var SERVICES = [
+  {ic:'💧', nm:'المياه',        unit:'محطة مياه',   n:6,   cap:9.0,  need:74,  given:61, build:520, addCap:1.5, addRun:12, months:6, min:'م. الإسكان'},
+  {ic:'⚡', nm:'الكهرباء',      unit:'محطة كهرباء', n:4,   cap:10.0, need:155, given:140,build:900, addCap:2.5, addRun:22, months:11,min:'م. الكهرباء'},
+  {ic:'🚰', nm:'الصرف الصحي',   unit:'محطة صرف',    n:3,   cap:6.0,  need:64,  given:45, build:610, addCap:2.0, addRun:14, months:9, min:'م. الإسكان'},
+  {ic:'🏥', nm:'الصحة',         unit:'مستشفى',      n:8,   cap:8.0,  need:80,  given:56, build:400, addCap:1.0, addRun:10, months:8, min:'م. الصحة'},
+  {ic:'🎓', nm:'التعليم',       unit:'٤ مدارس',     n:120, cap:10.0, need:160, given:95, build:180, addCap:0.6, addRun:9,  months:4, min:'م. التعليم'},
+  {ic:'👮', nm:'الشرطة',        unit:'قسم شرطة',    n:40,  cap:9.0,  need:82,  given:70, build:150, addCap:0.5, addRun:7,  months:3, min:'م. الداخلية'},
+  {ic:'🚒', nm:'المطافي والإسعاف',unit:'مركز إسعاف', n:22,  cap:7.0,  need:52,  given:34, build:120, addCap:0.5, addRun:5,  months:3, min:'م. الصحة'}
+];
+
+// Minister competence: only this share of the money actually reaches the service.
+// This is what makes "who runs the ministry" a budget question, not a flavour text.
+var COMPETENCE = 0.6;
+
+function ar(n){ return n.toLocaleString('ar-EG'); }
+function pct(x){ return Math.round(x*100); }
+
+function coverage(s){ return Math.min(1, s.cap / POP); }
+function operating(s){ return Math.min(1, (s.given * COMPETENCE) / s.need); }
+function level(s){ return coverage(s) * operating(s); }
+
+function colorFor(p){ return p >= 65 ? '#68d094' : p >= 40 ? '#e8c87a' : '#e07575'; }
+
+function draw(){
+  var h = '';
+  for (var i = 0; i < SERVICES.length; i++){
+    var s = SERVICES[i];
+    var lv = pct(level(s)), cv = pct(coverage(s)), op = pct(operating(s));
+    h += '<div class="svc" onclick="open_(' + i + ')">'
+       +   '<div class="sline">'
+       +     '<span class="sico">' + s.ic + '</span>'
+       +     '<span class="snm">' + s.nm + '<span class="scost">' + ar(s.given) + ' م/شهر</span></span>'
+       +     '<span class="slvl" style="color:' + colorFor(lv) + '">' + ar(lv) + '%</span>'
+       +   '</div>'
+       +   '<div class="bars">'
+       +     '<div class="bwrap"><span class="blbl">التغطية ' + ar(cv) + '%</span><div class="bar"><div class="fl cov" style="width:' + cv + '%"></div></div></div>'
+       +     '<div class="bwrap"><span class="blbl">التشغيل ' + ar(op) + '%</span><div class="bar"><div class="fl opr" style="width:' + op + '%"></div></div></div>'
+       +   '</div>'
+       + '</div>';
+  }
+  document.getElementById('list').innerHTML = h;
+}
+
+function open_(i){
+  var s = SERVICES[i];
+  var cv = pct(coverage(s)), op = pct(operating(s)), lv = pct(level(s));
+  var reaching = Math.round(s.given * COMPETENCE);
+  var lost = s.given - reaching;
+  var toFull = Math.max(0, Math.ceil(s.need / COMPETENCE) - s.given);
+
+  var h = '<div class="sh"><span class="ic">' + s.ic + '</span><span class="nm">' + s.nm
+        + '</span><span class="x" onclick="close_()">✕</span></div>';
+
+  h += '<div class="calc">'
+     +   '<div class="cr"><span>المنشآت (' + s.unit + ')</span><b>' + ar(s.n) + '</b></div>'
+     +   '<div class="cr"><span>بتخدم</span><b>' + s.cap.toLocaleString('ar-EG') + ' م من ' + POP.toLocaleString('ar-EG') + ' م نسمة</b></div>'
+     +   '<div class="cr"><span>التغطية</span><b style="color:#6fa8e0">' + ar(cv) + '%</b></div>'
+     +   '<div class="cr" style="padding-top:9px"><span>الميزانية المطلوبة للتشغيل الكامل</span><b>' + ar(Math.ceil(s.need/COMPETENCE)) + ' م</b></div>'
+     +   '<div class="cr"><span>اللي بتديه فعلاً</span><b>' + ar(s.given) + ' م</b></div>'
+     +   '<div class="cr"><span>التشغيل</span><b style="color:#e8c87a">' + ar(op) + '%</b></div>'
+     +   '<div class="ceq"><span>مستوى الخدمة = ' + ar(cv) + '% × ' + ar(op) + '% = </span><b>' + ar(lv) + '%</b></div>'
+     + '</div>';
+
+  h += '<div class="warn">⚠️ ' + s.min + ' كفاءته <b>' + ar(pct(COMPETENCE)) + '%</b> — يعني من الـ'
+     + ar(s.given) + ' مليون اللي بتصرفهم، <b>' + ar(reaching) + '</b> بس بيوصلوا للخدمة و<b>'
+     + ar(lost) + '</b> بيضيعوا في الطريق.</div>';
+
+  h += '<button class="opt" onclick="act(' + i + ',1)">💰 زوّد ميزانية التشغيل'
+     +   '<span class="d">+' + ar(toFull) + ' مليون شهريًا توصل التشغيل ١٠٠%. التحسن بيظهر خلال شهرين — بس العبء ده بيفضل عليك كل شهر.</span></button>';
+
+  h += '<button class="opt build" onclick="act(' + i + ',2)">🏗️ ابني ' + s.unit + ' جديد'
+     +   '<span class="d">' + ar(s.build) + ' مليون مرة واحدة · ' + ar(s.months) + ' شهور إنشاء · وبعد ما يفتح بيزوّد '
+     +   ar(s.addRun) + ' مليون على المصروف الشهري للأبد. التغطية تبقى '
+     +   ar(pct(Math.min(1,(s.cap + s.addCap)/POP))) + '%.</span></button>';
+
+  h += '<button class="opt cut" onclick="act(' + i + ',3)">✂️ قلّل الميزانية ٢٠٪'
+     +   '<span class="d">توفّر ' + ar(Math.round(s.given*0.2)) + ' مليون شهريًا — والخدمة تنزل لـ'
+     +   ar(pct(coverage(s) * Math.min(1,(s.given*0.8*COMPETENCE)/s.need))) + '%. الناس هتلاحظ.</span></button>';
+
+  document.getElementById('sheet').innerHTML = h;
+  document.getElementById('ovl').classList.add('on');
+}
+
+function close_(){ document.getElementById('ovl').classList.remove('on'); }
+
+function act(i, kind){
+  var s = SERVICES[i], msg;
+  if (kind === 1){
+    var add = Math.max(0, Math.ceil(s.need/COMPETENCE) - s.given);
+    s.given += add;
+    msg = 'زوّدت ميزانية ' + s.nm + ' بـ' + ar(add) + ' مليون شهريًا.<br>التحسن هيظهر خلال شهرين.';
+  } else if (kind === 2){
+    msg = '🏗️ بدأ إنشاء ' + s.unit + ' — ' + ar(s.build) + ' مليون اتخصمت.<br>هيفتح بعد '
+        + ar(s.months) + ' شهور، وساعتها المصروف الشهري هيزيد ' + ar(s.addRun) + ' مليون.';
+  } else {
+    s.given = Math.round(s.given * 0.8);
+    msg = '✂️ قلّلت ميزانية ' + s.nm + '.<br>وفّرت فلوس — والرضا الشعبي هينزل الشهر الجاي.';
+  }
+  close_(); draw(); toast(msg);
+}
+
+function toast(m){
+  var t = document.getElementById('toast');
+  t.innerHTML = m; t.classList.add('on');
+  setTimeout(function(){ t.classList.remove('on'); }, 3400);
+}
+
+draw();
+</script>
+</body>
+</html>

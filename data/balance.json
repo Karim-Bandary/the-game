@@ -1,0 +1,194 @@
+{
+  "_note": "كل الفلوس بالمليون. كل المؤشرات من 0 إلى 100 إلا التضخم (نسبة سنوية).",
+  "start": {
+    "treasury": 2400,
+    "inflation": 6.0,
+    "tax_rate": 20,
+    "utility_price": 50,
+    "food_subsidy": 60,
+    "budget_pct": 118,
+    "minister_competence": 65,
+    "admin_salaries": 180,
+    "population_millions": 12.0
+  },
+  "governorates": {
+    "capital": {
+      "name": "العاصمة",
+      "population": 4.2,
+      "wealth": 1.3,
+      "youth": 0.85,
+      "facilities": {
+        "water": 3,
+        "power": 2,
+        "sewage": 2,
+        "health": 4,
+        "edu": 5,
+        "police": 6,
+        "fire": 4
+      }
+    },
+    "industrial": {
+      "name": "الصناعية",
+      "population": 2.4,
+      "wealth": 1.1,
+      "youth": 1.0,
+      "facilities": {
+        "water": 2,
+        "power": 1,
+        "sewage": 1,
+        "health": 2,
+        "edu": 3,
+        "police": 3,
+        "fire": 2
+      }
+    },
+    "agri": {
+      "name": "الزراعية",
+      "population": 2.2,
+      "wealth": 0.8,
+      "youth": 1.05,
+      "facilities": {
+        "water": 1,
+        "power": 1,
+        "sewage": 1,
+        "health": 2,
+        "edu": 2,
+        "police": 2,
+        "fire": 2
+      }
+    },
+    "south": {
+      "name": "الجنوب",
+      "population": 2.6,
+      "wealth": 0.6,
+      "youth": 1.35,
+      "facilities": {
+        "water": 1,
+        "power": 1,
+        "sewage": 1,
+        "health": 1,
+        "edu": 3,
+        "police": 3,
+        "fire": 1
+      }
+    },
+    "border": {
+      "name": "الحدودية",
+      "population": 0.6,
+      "wealth": 0.75,
+      "youth": 1.0,
+      "facilities": {
+        "water": 1,
+        "power": 1,
+        "sewage": 0,
+        "health": 1,
+        "edu": 1,
+        "police": 1,
+        "fire": 1
+      }
+    }
+  },
+  "services": {
+    "water": {
+      "name": "المياه",
+      "serves_millions": 1.5,
+      "monthly_ask": 60,
+      "build_cost": 520,
+      "build_months": 6,
+      "adds_monthly": 9,
+      "approval_weight": 0.16
+    },
+    "power": {
+      "name": "الكهربا",
+      "serves_millions": 1.8,
+      "monthly_ask": 105,
+      "build_cost": 900,
+      "build_months": 11,
+      "adds_monthly": 16,
+      "approval_weight": 0.15
+    },
+    "sewage": {
+      "name": "الصرف",
+      "serves_millions": 2.0,
+      "monthly_ask": 45,
+      "build_cost": 610,
+      "build_months": 9,
+      "adds_monthly": 8,
+      "approval_weight": 0.11
+    },
+    "health": {
+      "name": "الصحة",
+      "serves_millions": 1.0,
+      "monthly_ask": 82,
+      "build_cost": 400,
+      "build_months": 8,
+      "adds_monthly": 7,
+      "approval_weight": 0.17
+    },
+    "edu": {
+      "name": "التعليم",
+      "serves_millions": 0.6,
+      "monthly_ask": 95,
+      "build_cost": 180,
+      "build_months": 4,
+      "adds_monthly": 6,
+      "approval_weight": 0.14
+    },
+    "police": {
+      "name": "الشرطة",
+      "serves_millions": 0.5,
+      "monthly_ask": 58,
+      "build_cost": 150,
+      "build_months": 3,
+      "adds_monthly": 5,
+      "approval_weight": 0.15
+    },
+    "fire": {
+      "name": "الإسعاف",
+      "serves_millions": 0.5,
+      "monthly_ask": 35,
+      "build_cost": 120,
+      "build_months": 3,
+      "adds_monthly": 4,
+      "approval_weight": 0.12
+    }
+  },
+  "income": {
+    "income_tax_coef": 2.3,
+    "corporate_tax_coef": 33.0,
+    "utility_bills_coef": 22.0,
+    "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))"
+  },
+  "food": {
+    "agri_yield": 11.0,
+    "world_price": 28,
+    "consumption_per_million": 1.0,
+    "price_smoothing": 0.55,
+    "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج"
+  },
+  "inflation": {
+    "monthly_decay": 0.08,
+    "floor": 3.0,
+    "deficit_penalty": 1.4,
+    "collapse_at": 150.0,
+    "pain_starts_above": 9.0,
+    "pain_coef": 1.5,
+    "print_350_adds": 2.2
+  },
+  "mood": {
+    "smoothing": 0.3,
+    "stability_smoothing": 0.22,
+    "tax_pain_coef": 1.6,
+    "tax_pain_free_below": 18,
+    "utility_pain_coef": 0.8,
+    "food_pain_coef": 0.85,
+    "approval_danger": 35,
+    "stability_danger": 40,
+    "boil_cap": 100,
+    "boil_cooldown": 7
+  },
+  "population": {
+    "monthly_growth_base": 0.0018,
+    "health_penalty_coef": 0.001
+  }
+}
