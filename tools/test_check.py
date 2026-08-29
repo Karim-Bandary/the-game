@@ -22,6 +22,18 @@ TEXT_CASES = [
     ("خطأ في الجافاسكريبت", "docs/setup-mockup.html", lambda s: s.replace("function draw(){", "function draw(){{", 1)),
     ("ملف متولّد اتعدّل بالإيد", "docs/balance.html", lambda s: s.replace("<h1>", "<h1>x", 1)),
     ("الملف الملزوق اتعدّل بالإيد", "game/index.html", lambda s: s.replace("<title>", "<title>x", 1)),
+    ("مانيفست أندرويد XML باظ", "android/app/src/main/AndroidManifest.xml",
+     lambda s: s.replace("</manifest>", "")),
+    ("اسم الحزمة في الجافا مش زي الجرادل", "android/app/src/main/java/com/karim/thegame/MainActivity.java",
+     lambda s: s.replace("package com.karim.thegame;", "package com.other.app;")),
+    ("المانيفست بيشاور على نشاط مش موجود", "android/app/src/main/AndroidManifest.xml",
+     lambda s: s.replace('android:name=".MainActivity"', 'android:name=".Missing"')),
+    ("اسم التطبيق اتشال من res", "android/app/src/main/res/values/strings.xml",
+     lambda s: s.replace('name="app_name"', 'name="other"')),
+    ("minSdk نزل تحت ٢٦ والأيقونة XML بس", "android/app/build.gradle",
+     lambda s: s.replace("minSdk 26", "minSdk 21")),
+    ("زرار الرجوع بينده على دالة مش موجودة", "game/src/ui.js",
+     lambda s: s.replace("function onAndroidBack()", "function onAndroidBackX()")),
 ]
 
 # These change a game source and rebuild first, so the bundle is valid but the

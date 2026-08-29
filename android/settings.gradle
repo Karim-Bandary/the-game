@@ -1,0 +1,17 @@
+// Kept deliberately plain: the fewer moving parts, the fewer ways a build we
+// cannot run locally can fail.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "the-game"
+include ":app"

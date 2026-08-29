@@ -306,6 +306,14 @@ def check_simulator(problems):
                             "دي مش صعوبة، دي فخ")
 
 
+def check_android(problems):
+    """The Android project cannot be compiled here — no SDK, and the network
+    blocks Google's servers. tools/check_android.py stands in for the compiler."""
+    sys.path.insert(0, str(TOOLS))
+    import check_android
+    check_android.check(problems)
+
+
 def check_progress_bar(problems):
     """The plan has 26 items and the home page draws one slot each. A patched
     bar quietly grows or shrinks, and then the page lies about where we are."""
@@ -341,7 +349,7 @@ def check_game_runs(problems):
 CHECKS = [
     check_html_structure, check_anchors, check_tables, check_theme, check_svg,
     check_javascript, check_balance_json, check_setup_json,
-    check_generated_files_match, check_progress_bar, check_game_runs, check_simulator,
+    check_generated_files_match, check_android, check_progress_bar, check_game_runs, check_simulator,
 ]
 
 

@@ -248,6 +248,15 @@ function openBuild(id) {
   el('ovl').classList.remove('hidden');
 }
 
+/* Called by the Android shell before it backgrounds the app. Return true if
+   the page consumed the press. Harmless in a browser, where nothing calls it. */
+function onAndroidBack() {
+  var ovl = el('ovl');
+  if (ovl && !ovl.classList.contains('hidden')) { closeSheet(); return true; }
+  if (S && running) { setRunning(false); return true; }   // pause before leaving
+  return false;
+}
+
 function closeSheet() { el('ovl').classList.add('hidden'); el('ovl').innerHTML = ''; }
 
 function toast(msg) {
