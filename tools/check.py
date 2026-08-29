@@ -15,16 +15,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DATA, DOCS, TOOLS = ROOT / "data", ROOT / "docs", ROOT / "tools"
 
-# Pages that use the light/dark token system. The game mockups are deliberately
-# single-theme dark, so the theme rules below must not be applied to them.
-THEMED = {"design.html", "balance.html", "index.html"}
+# Pages that use the light/dark token system, keyed by path from the repo root.
+# Keyed by path and not by file name because game/index.html and index.html
+# share a name and only one of them is themed — the game is deliberately
+# single-theme dark.
+THEMED = {"docs/design.html", "docs/balance.html", "index.html"}
+
+
+def rel(f):
+    return f.relative_to(ROOT).as_posix()
 
 VOID = {"meta", "link", "br", "hr", "img", "input", "source",
         "path", "rect", "circle", "line", "polygon", "polyline", "use", "marker", "stop"}
 
 
 def html_files():
-    return sorted(list(DOCS.glob("*.html")) + [ROOT / "index.html"])
+    return sorted(list(DOCS.glob("*.html")) + [ROOT / "index.html", ROOT / "game" / "index.html"])
 
 
 # --------------------------------------------------------------------- HTML
@@ -55,9 +61,9 @@ def check_html_structure(problems):
         p = Balance()
         p.feed(src)
         for e in p.errors:
-            problems.append(f"{f.name}: وسم غلط — {e}")
+            problems.append(f"{rel(f)}: وسم غلط — {e}")
         if p.stack:
-            problems.append(f"{f.name}: وسوم مفتوحة ما اتقفلتش — {p.stack}")
+            problems.append(f"{rel(f)}: وسوم مفتوحة ما اتقفلتش — {p.stack}")
 
 
 def check_anchors(problems):
@@ -67,7 +73,7 @@ def check_anchors(problems):
         anchors = set(re.findall(r'href="#([\w-]+)"', src))
         ids = set(re.findall(r'id="([\w-]+)"', src))
         for a in anchors - ids:
-            problems.append(f"{f.name}: رابط داخلي #{a} مش موجود")
+            problems.append(f"{rel(f)}: رابط داخلي #{a} مش موجود")
 
 
 def check_tables(problems):
@@ -87,29 +93,29 @@ def check_theme(problems):
     """The classic unreadable-artifact bug: a colour defined only inside a dark
     block leaves the un-stamped default theme rendering one theme on the other."""
     for f in html_files():
-        if f.name not in THEMED:
+        if rel(f) not in THEMED:
             continue
         css_m = re.search(r"<style>(.*?)</style>", f.read_text(encoding="utf-8"), re.S)
         if not css_m:
-            problems.append(f"{f.name}: مفيش بلوك <style>")
+            problems.append(f"{rel(f)}: مفيش بلوك <style>")
             continue
         css = css_m.group(1)
         m = re.search(r":root\{(.*?)\}", css, re.S)
         if not m:
-            problems.append(f"{f.name}: مفيش :root فيه ألوان الوضع الفاتح")
+            problems.append(f"{rel(f)}: مفيش :root فيه ألوان الوضع الفاتح")
             continue
         defined = set(re.findall(r"(--[\w-]+)\s*:", m.group(1)))
         for v in set(re.findall(r"var\((--[\w-]+)\)", css)) - defined:
-            problems.append(f"{f.name}: المتغير {v} مستخدم ومش معرّف في :root الفاتح")
+            problems.append(f"{rel(f)}: المتغير {v} مستخدم ومش معرّف في :root الفاتح")
         for label, marker in [("الوضع الداكن التلقائي", r':root:not\(\[data-theme="light"\]\)\{(.*?)\}'),
                               ("الوضع الداكن اليدوي", r':root\[data-theme="dark"\]\{(.*?)\}')]:
             mm = re.search(marker, css, re.S)
             if not mm:
-                problems.append(f"{f.name}: {label} مش موجود")
+                problems.append(f"{rel(f)}: {label} مش موجود")
                 continue
             missing = defined - set(re.findall(r"(--[\w-]+)\s*:", mm.group(1)))
             if missing:
-                problems.append(f"{f.name}: {label} ناقصه ألوان — {sorted(missing)}")
+                problems.append(f"{rel(f)}: {label} ناقصه ألوان — {sorted(missing)}")
 
 
 def check_svg(problems):
@@ -120,13 +126,13 @@ def check_svg(problems):
         defined = set(re.findall(r'<marker id="([\w-]+)"', src))
         for ref in set(re.findall(r"url\(#([\w-]+)\)", src)):
             if ref not in defined:
-                problems.append(f"{f.name}: السهم url(#{ref}) مالوش تعريف")
+                problems.append(f"{rel(f)}: السهم url(#{ref}) مالوش تعريف")
         for m in re.finditer(r'<svg viewBox="0 0 (\d+) (\d+)"(.*?)</svg>', src, re.S):
             W, H, body = int(m.group(1)), int(m.group(2)), m.group(3)
             for r in re.finditer(r'<rect[^>]*?x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)"', body):
                 x, y, w, h = map(int, r.groups())
                 if x + w > W or y + h > H:
-                    problems.append(f"{f.name}: مربع في الرسمة برّه حدودها ({x},{y} {w}×{h} في {W}×{H})")
+                    problems.append(f"{rel(f)}: مربع في الرسمة برّه حدودها ({x},{y} {w}×{h} في {W}×{H})")
 
 
 def check_javascript(problems):
@@ -149,7 +155,7 @@ def check_javascript(problems):
                 tmp = t.name
             r = subprocess.run(["node", "--check", tmp], capture_output=True, text=True)
             if r.returncode:
-                problems.append(f"{f.name}: خطأ في الجافاسكريبت — {r.stderr.strip().splitlines()[-1]}")
+                problems.append(f"{rel(f)}: خطأ في الجافاسكريبت — {r.stderr.strip().splitlines()[-1]}")
         # Handlers are checked against every script on the page, not one at a time.
         called = set()
         for attr in re.findall(r'on(?:click|input|change)=("[^"]*"|\'[^\']*\')', src):
@@ -159,7 +165,7 @@ def check_javascript(problems):
             defined |= set(re.findall(r"function\s+([A-Za-z_]\w*)", js))
             defined |= set(re.findall(r"(?:var|let|const)\s+([A-Za-z_]\w*)\s*=\s*function", js))
         for h in called - defined - BUILTIN:
-            problems.append(f"{f.name}: زرار بينده على {h}() وهي مش معرّفة")
+            problems.append(f"{rel(f)}: زرار بينده على {h}() وهي مش معرّفة")
 
 
 # --------------------------------------------------------------------- data
@@ -226,11 +232,13 @@ def check_generated_files_match(problems):
     """docs/balance.html and the two mockups are generated. If someone edits one
     by hand, the document and the game stop agreeing — which is exactly the kind
     of drift nobody notices until it is expensive."""
-    generated = ["docs/balance.html", "docs/app-mockup.html", "docs/setup-mockup.html"]
+    generated = ["docs/balance.html", "docs/app-mockup.html", "docs/setup-mockup.html",
+                 "game/index.html"]
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "repo"
         shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "__pycache__"))
-        for script in ["build_balance_doc.py", "build_mockup.py", "build_setup_mockup.py"]:
+        for script in ["build_balance_doc.py", "build_mockup.py", "build_setup_mockup.py",
+                       "build_game.py"]:
             r = subprocess.run([sys.executable, str(work / "tools" / script)],
                                capture_output=True, text=True, cwd=work)
             if r.returncode:
@@ -274,10 +282,42 @@ def check_simulator(problems):
                         "يعني فيه استراتيجية واحدة صح وباقي اللعب غلط")
 
 
+def check_progress_bar(problems):
+    """The plan has 26 items and the home page draws one slot each. A patched
+    bar quietly grows or shrinks, and then the page lies about where we are."""
+    src = (ROOT / "index.html").read_text(encoding="utf-8")
+    m = re.search(r'<div class="prog">(.*?)</div>', src, re.S)
+    if not m:
+        problems.append("index.html: شريط التقدم مش موجود")
+        return
+    slots = m.group(1).count("<i")
+    if slots != 26:
+        problems.append(f"index.html: شريط التقدم فيه {slots} خانة والخطة ٢٦ بند")
+    if not re.search(r'href="game/"', src):
+        problems.append("index.html: رابط اللعبة مش موجود في الصفحة الرئيسية")
+
+
+def check_game_runs(problems):
+    """Drives the real bundle through a fake DOM: setup, all 12 government and
+    society combinations, five years of months, every tab. This is what looks at
+    the game, since neither of us can."""
+    if not shutil.which("node"):
+        problems.append("تحذير: node مش متثبت — اختبار اللعبة اتخطى")
+        return
+    r = subprocess.run(["node", str(TOOLS / "test_game.js")], capture_output=True, text=True)
+    if r.returncode:
+        for line in (r.stdout + r.stderr).strip().splitlines():
+            line = line.strip()
+            if line.startswith("•"):
+                problems.append("اللعبة: " + line[1:].strip())
+        if not any(p.startswith("اللعبة:") for p in problems):
+            problems.append("اللعبة: الاختبار وقع — " + (r.stderr or r.stdout).strip()[:200])
+
+
 CHECKS = [
     check_html_structure, check_anchors, check_tables, check_theme, check_svg,
     check_javascript, check_balance_json, check_setup_json,
-    check_generated_files_match, check_simulator,
+    check_generated_files_match, check_progress_bar, check_game_runs, check_simulator,
 ]
 
 

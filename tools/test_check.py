@@ -21,6 +21,18 @@ TEXT_CASES = [
     ("دالة زرار ناقصة", "docs/app-mockup.html", lambda s: s.replace("function gset(g)", "function gsetX(g)", 1)),
     ("خطأ في الجافاسكريبت", "docs/setup-mockup.html", lambda s: s.replace("function draw(){", "function draw(){{", 1)),
     ("ملف متولّد اتعدّل بالإيد", "docs/balance.html", lambda s: s.replace("<h1>", "<h1>x", 1)),
+    ("الملف الملزوق اتعدّل بالإيد", "game/index.html", lambda s: s.replace("<title>", "<title>x", 1)),
+]
+
+# These change a game source and rebuild first, so the bundle is valid but the
+# RULES are wrong — the only thing that catches that is the game's own test.
+REBUILD_CASES = [
+    ("طاقة القرارات مبقتش بتتجدد", "game/src/engine.js",
+     lambda s: s.replace("S.ap = S.apMax;", "// removed")),
+    ("لفة السنة اتكسرت", "game/src/engine.js",
+     lambda s: s.replace("if (S.month > 12)", "if (S.month > 13)")),
+    ("معاملات الاختيارات مش بتتطبق", "game/src/engine.js",
+     lambda s: s.replace("for (var k in opt.mods) if (S[k] !== undefined) S[k] += opt.mods[k];", "")),
 ]
 
 JSON_CASES = [
@@ -39,7 +51,7 @@ JSON_CASES = [
 ]
 
 
-def broken_repo_fails(rel, mutate, as_json):
+def broken_repo_fails(rel, mutate, as_json, rebuild=False):
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp) / "repo"
         shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "__pycache__"))
@@ -50,6 +62,11 @@ def broken_repo_fails(rel, mutate, as_json):
             p.write_text(json.dumps(d, ensure_ascii=False, indent=2), encoding="utf-8")
         else:
             p.write_text(mutate(p.read_text(encoding="utf-8")), encoding="utf-8")
+        if rebuild:
+            b = subprocess.run([sys.executable, str(work / "tools" / "build_game.py")],
+                               capture_output=True, text=True)
+            if b.returncode:
+                return True   # the bundler itself refusing is a pass too
         r = subprocess.run([sys.executable, str(work / "tools" / "check.py")],
                            capture_output=True, text=True)
         return r.returncode != 0
@@ -65,7 +82,11 @@ def main():
         caught = broken_repo_fails(rel, mutate, True)
         print(f"  {'✓' if caught else '✗'} {name}")
         ok &= caught
-    total = len(TEXT_CASES) + len(JSON_CASES)
+    for name, rel, mutate in REBUILD_CASES:
+        caught = broken_repo_fails(rel, mutate, False, rebuild=True)
+        print(f"  {'✓' if caught else '✗'} {name}")
+        ok &= caught
+    total = len(TEXT_CASES) + len(JSON_CASES) + len(REBUILD_CASES)
     print()
     if ok:
         print(f"✓ الفاحص مسك كل الأخطاء المتعمدة ({total} خطأ).")
