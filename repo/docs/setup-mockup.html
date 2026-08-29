@@ -1,82 +1,4 @@
-"""
-Generates setup_mockup.html — the new-game flow (name → government → society → start).
-
-Why generated from data/balance.json: the summary screen shows the ACTUAL starting
-numbers each choice produces. If it invented them, Karim would be reviewing a
-promise instead of the game.
-"""
-import json
-
-B = json.load(open("data/balance.json", encoding="utf-8"))
-st = B["start"]
-
-BASE = {
-    "approval": 52, "stability": 68, "treasury": st["treasury"], "ap": 6,
-    "inflation": st["inflation"], "competence": st["minister_competence"], "loyalty": 65,
-}
-
-# Every modifier is a number or a rule flag — never a separate content tree.
-# That is what makes these choices cheap to build and expensive to feel.
-GOVS = [
-    {"id": "monarchy", "ic": "👑", "nm": "ملكي", "tag": "الشرعية موروثة",
-     "desc": "إنت ملك. الناس مش لازم تحبك عشان تفضل في الكرسي — بس تغيير أي حاجة صعب.",
-     "mods": {"stability": +12, "ap": -1},
-     "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"],
-     "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك",
-             "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١٫٥"],
-     "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."},
-
-    {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق",
-     "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.",
-     "mods": {"competence": +8},
-     "good": ["كفاءة الوزرا +٨ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)",
-              "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"],
-     "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت",
-             "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"],
-     "feel": "لعبة بإيقاع. أربع سنين شغل، وامتحان."},
-
-    {"id": "dictator", "ic": "🎖️", "nm": "ديكتاتوري", "tag": "شرعيتك من الجيش",
-     "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش هو الحاجة الوحيدة اللي بتخاف منها.",
-     "mods": {"ap": +2, "approval": -10},
-     "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪",
-              "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠٫٦ — الإعلام مقفول"],
-     "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار",
-             "⚠️ لو رضا الجيش نزل تحت ٣٠ → انقلاب فوري ونهاية تالتة"],
-     "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."},
-]
-
-SOCIETIES = [
-    {"id": "conservative", "ic": "🕌", "nm": "مجتمع محافظ", "tag": "بطيء ومستقر",
-     "desc": "مجتمع متماسك بيقدّر الاستقرار. بيسامحك كتير — لو ما حاولتش تغيّره.",
-     "mods": {"stability": +8},
-     "good": ["ثبات +٨", "الغليان بيتراكم أبطأ ١٥٪", "كتلة المتدينين أكبر — ولو راضية بتهدّي الباقي"],
-     "bad": ["كل إصلاح كبير بيكلف ضعف الرضا", "التعليم أثره على الاقتصاد أقل ٢٠٪"]},
-
-    {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب",
-     "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.",
-     "mods": {"competence": +6},
-     "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٦"],
-     "bad": ["الفضيحة بتنتشر ×١٫٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]},
-
-    {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة",
-     "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.",
-     "mods": {"loyalty": +15, "competence": -12},
-     "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الجيش أرخص ٣٠٪", "المحافظات البعيدة أهدى"],
-     "bad": ["كفاءة الوزرا −١٢ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]},
-
-    {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية",
-     "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.",
-     "mods": {"approval": -6},
-     "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"],
-     "bad": ["كل أزمة بتكبر ×١٫٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]},
-]
-
-COUNTRY_NAMES = ["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان",
-                 "مملكة الشمال", "دولة المرتفعات", "بلاد النخيل"]
-RULER_NAMES = ["كريم عبد الحكم", "سليم الفارس", "عادل بن راشد", "نور الدين حلمي",
-               "طارق العامري", "مراد الشريف"]
-
-HTML = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -153,10 +75,10 @@ input:focus{outline:none;border-color:#c9a24b}
   <div class="foot" id="foot"></div>
 </div>
 <script>
-var GOVS=__GOVS__, SOCS=__SOCS__, BASE=__BASE__;
-var CN=__CN__, RN=__RN__;
+var GOVS=[{"id": "monarchy", "ic": "👑", "nm": "ملكي", "tag": "الشرعية موروثة", "desc": "إنت ملك. الناس مش لازم تحبك عشان تفضل في الكرسي — بس تغيير أي حاجة صعب.", "mods": {"stability": 12, "ap": -1}, "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"], "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك", "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١.٥"], "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."}, {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق", "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.", "mods": {"competence": 4}, "good": ["كفاءة الوزرا +٤ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)", "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"], "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت", "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"], "feel": "لعبة بإيقاع. أربع سنين شغل، وامتحان."}, {"id": "dictator", "ic": "🎖️", "nm": "ديكتاتوري", "tag": "شرعيتك من الجيش", "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش هو الحاجة الوحيدة اللي بتخاف منها.", "mods": {"ap": 2, "approval": -10}, "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪", "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠.٦ — الإعلام مقفول"], "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار", "⚠️ لو رضا الجيش نزل تحت ٣٠ → انقلاب فوري ونهاية تالتة"], "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."}], SOCS=[{"id": "conservative", "ic": "🕌", "nm": "مجتمع محافظ", "tag": "بطيء ومستقر", "desc": "مجتمع متماسك بيقدّر الاستقرار. بيسامحك كتير — لو ما حاولتش تغيّره.", "mods": {"stability": 8}, "good": ["ثبات +٨", "الغليان بيتراكم أبطأ ١٥٪", "كتلة المتدينين أكبر — ولو راضية بتهدّي الباقي"], "bad": ["كل إصلاح كبير بيكلف ضعف الرضا", "التعليم أثره على الاقتصاد أقل ٢٠٪"]}, {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب", "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.", "mods": {"competence": 3}, "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٣"], "bad": ["الفضيحة بتنتشر ×١.٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]}, {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة", "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.", "mods": {"loyalty": 15, "competence": -6}, "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الجيش أرخص ٣٠٪", "المحافظات البعيدة أهدى"], "bad": ["كفاءة الوزرا −٦ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]}, {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية", "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.", "mods": {"approval": -6}, "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"], "bad": ["كل أزمة بتكبر ×١.٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]}], BASE={"approval": 52, "stability": 68, "treasury": 2400, "ap": 6, "inflation": 6.0, "competence": 65, "loyalty": 65};
+var CN=["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان", "مملكة الشمال", "دولة المرتفعات", "بلاد النخيل"], RN=["كريم عبد الحكم", "سليم الفارس", "عادل بن راشد", "نور الدين حلمي", "طارق العامري", "مراد الشريف"];
 var AR="٠١٢٣٤٥٦٧٨٩";
-function ar(n){return String(Math.round(n)).replace(/\\d/g,function(d){return AR[+d]})}
+function ar(n){return String(Math.round(n)).replace(/\d/g,function(d){return AR[+d]})}
 
 var S={step:0, country:"", ruler:"", gov:null, soc:null};
 
@@ -183,7 +105,7 @@ function steps(){
 function pick(list,cur,key){
   return list.map(function(o,i){
     var sel=cur&&cur.id===o.id;
-    var h='<button class="opt '+(sel?'sel':'')+'" onclick="sel_(\\''+key+'\\','+i+')">'
+    var h='<button class="opt '+(sel?'sel':'')+'" onclick="sel_(\''+key+'\','+i+')">'
       +'<div class="hd"><span class="ic">'+o.ic+'</span><span class="nm">'+o.nm+'</span>'
       +'<span class="tag">'+o.tag+'</span></div>'
       +'<p class="ds">'+o.desc+'</p><div class="detail"><div class="lst">';
@@ -201,10 +123,10 @@ function view(){
       +'<p class="lede">دولة خيالية، وحاكم من اختيارك. الأسماء دي هتظهر في كل مكان في اللعبة وفي شاشة النهاية.</p>'
       +'<div class="field"><label>اسم الدولة</label><div class="wrap">'
       +'<input id="cn" value="'+S.country+'" placeholder="اكتب اسم دولتك" oninput="S.country=this.value;foot()">'
-      +'<button class="dice" onclick="roll(\\'country\\')">🎲</button></div></div>'
+      +'<button class="dice" onclick="roll(\'country\')">🎲</button></div></div>'
       +'<div class="field"><label>اسمك كحاكم</label><div class="wrap">'
       +'<input id="rn" value="'+S.ruler+'" placeholder="اكتب اسمك" oninput="S.ruler=this.value;foot()">'
-      +'<button class="dice" onclick="roll(\\'ruler\\')">🎲</button></div></div>'
+      +'<button class="dice" onclick="roll(\'ruler\')">🎲</button></div></div>'
       +'<div class="flag">💡 لو سيبتهم فاضيين، اللعبة هتختار لك أسماء عشوائية.</div>';
   }
   if(S.step===1){
@@ -257,17 +179,4 @@ function draw(){ steps(); document.getElementById('view').innerHTML=view(); foot
 draw();
 </script>
 </body>
-</html>"""
-
-out = (HTML.replace("__GOVS__", json.dumps(GOVS, ensure_ascii=False))
-           .replace("__SOCS__", json.dumps(SOCIETIES, ensure_ascii=False))
-           .replace("__BASE__", json.dumps(BASE, ensure_ascii=False))
-           .replace("__CN__", json.dumps(COUNTRY_NAMES, ensure_ascii=False))
-           .replace("__RN__", json.dumps(RULER_NAMES, ensure_ascii=False)))
-open("setup_mockup.html", "w", encoding="utf-8").write(out)
-
-# the setup modifiers are game data, so they belong in the data folder too
-json.dump({"government_types": GOVS, "society_types": SOCIETIES, "base_start": BASE,
-           "suggested_country_names": COUNTRY_NAMES, "suggested_ruler_names": RULER_NAMES},
-          open("data/setup.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-print("setup_mockup.html + data/setup.json written")
+</html>

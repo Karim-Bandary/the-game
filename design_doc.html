@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دفتر تصميم الحُكم</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+
+<style>
+  :root{
+    --paper:#edf0e9;
+    --surface:#f7f9f4;
+    --surface2:#e4e9dd;
+    --ink:#1a1f1b;
+    --muted:#5c6a5f;
+    --rule:#cdd5c5;
+    --rule2:#b3bfa8;
+    --seal:#155c4c;
+    --gold:#966b12;
+    --alert:#9a3325;
+    --shadow:rgba(26,31,27,.09);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12160f;
+      --surface:#1a1f18;
+      --surface2:#232a20;
+      --ink:#e4e9dc;
+      --muted:#93a08f;
+      --rule:#333d2e;
+      --rule2:#4a5742;
+      --seal:#5fb89e;
+      --gold:#d9a94a;
+      --alert:#e08878;
+      --shadow:rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12160f;
+    --surface:#1a1f18;
+    --surface2:#232a20;
+    --ink:#e4e9dc;
+    --muted:#93a08f;
+    --rule:#333d2e;
+    --rule2:#4a5742;
+    --seal:#5fb89e;
+    --gold:#d9a94a;
+    --alert:#e08878;
+    --shadow:rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
+    font-size:16px;
+    line-height:1.95;
+    margin:0;
+  }
+  .doc{direction:rtl;text-align:right;max-width:1120px;margin:0 auto;padding:0 20px 90px}
+
+  /* ---------- masthead ---------- */
+  .mast{padding:54px 0 30px;border-bottom:2px solid var(--ink);margin-bottom:6px}
+  .stamp{
+    display:inline-block;font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;font-weight:500;
+    letter-spacing:.18em;color:var(--seal);border:1.5px solid var(--seal);
+    border-radius:3px;padding:5px 11px;margin-bottom:20px;
+  }
+  h1{
+    font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;
+    font-size:clamp(30px,6vw,46px);line-height:1.35;margin:0 0 14px;text-wrap:balance;
+  }
+  .sub{color:var(--muted);font-size:15.5px;max-width:62ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:24px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:600}
+
+  /* ---------- layout ---------- */
+  .wrap{display:grid;grid-template-columns:1fr;gap:0}
+  @media(min-width:1000px){
+    .wrap{grid-template-columns:210px 1fr;gap:52px;align-items:start}
+    .rail{position:sticky;top:26px;padding-top:40px}
+  }
+  .rail{display:none}
+  @media(min-width:1000px){.rail{display:block}}
+  .rail div{font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;letter-spacing:.14em;
+            color:var(--muted);margin-bottom:14px}
+  .rail a{display:block;font-size:13.5px;color:var(--muted);text-decoration:none;
+          padding:4px 0 4px 0;border-right:2px solid transparent;padding-right:11px;line-height:1.5}
+  .rail a:hover,.rail a:focus-visible{color:var(--seal);border-right-color:var(--seal)}
+  .rail a b{color:var(--rule2);font-weight:500;margin-left:7px;font-variant-numeric:tabular-nums}
+
+  /* ---------- sections ---------- */
+  section{padding-top:46px;scroll-margin-top:20px}
+  h2{
+    font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;font-size:23px;line-height:1.5;
+    margin:0 0 6px;display:flex;align-items:baseline;gap:12px;text-wrap:balance;
+  }
+  h2 .num{
+    font-size:12px;font-weight:500;color:var(--seal);border:1.5px solid var(--rule2);
+    border-radius:4px;padding:2px 8px;flex:none;font-variant-numeric:tabular-nums;
+  }
+  .lede{color:var(--muted);font-size:15px;margin:0 0 22px;max-width:66ch}
+  h3{font-family:'Noto Kufi Arabic',sans-serif;font-size:16px;font-weight:500;
+     margin:30px 0 10px;color:var(--ink)}
+  p{max-width:68ch;margin:0 0 15px}
+  ul{max-width:68ch;margin:0 0 15px;padding-right:20px}
+  li{margin-bottom:7px}
+  strong{font-weight:600}
+  em{font-style:normal;color:var(--seal);font-weight:600}
+  hr{border:0;border-top:1px solid var(--rule);margin:44px 0 0}
+
+  /* ---------- blocks ---------- */
+  .formula{
+    background:var(--surface);border:1px solid var(--rule2);border-radius:8px;
+    padding:16px 18px;margin:18px 0;box-shadow:0 1px 0 var(--shadow);
+  }
+  .formula .eq{
+    font-family:'Noto Kufi Arabic',sans-serif;font-size:17px;font-weight:500;
+    color:var(--seal);line-height:1.8;text-wrap:balance;
+  }
+  .formula .why{font-size:13.5px;color:var(--muted);margin:9px 0 0;max-width:64ch;line-height:1.85}
+
+  .trap,.open,.risk{
+    border-right:3px solid;border-radius:0 8px 8px 0;padding:13px 16px;margin:18px 0;
+    font-size:14.5px;line-height:1.85;max-width:68ch;background:var(--surface);
+  }
+  .trap{border-color:var(--alert)}
+  .open{border-color:var(--gold)}
+  .risk{border-color:var(--rule2)}
+  .trap b,.open b,.risk b{display:block;font-family:'Noto Kufi Arabic',sans-serif;
+        font-size:11px;letter-spacing:.1em;margin-bottom:6px;font-weight:500}
+  .trap b{color:var(--alert)}
+  .open b{color:var(--gold)}
+  .risk b{color:var(--muted)}
+
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+  th{
+    font-family:'Noto Kufi Arabic',sans-serif;font-weight:500;font-size:11.5px;letter-spacing:.05em;
+    color:var(--muted);text-align:right;padding:11px 14px;border-bottom:1px solid var(--rule2);
+    background:var(--surface2);white-space:nowrap;
+  }
+  td{padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.7}
+  tr:last-child td{border-bottom:0}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--seal);font-weight:500}
+  td.k{font-weight:600;white-space:nowrap}
+
+  /* ---------- diagram ---------- */
+  figure{margin:26px 0 10px}
+  .dgw{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;
+        background:var(--surface);padding:16px 14px}
+  .dgw svg{display:block;min-width:700px;width:100%;height:auto;color:var(--ink)}
+  figcaption{font-size:13px;color:var(--muted);margin-top:11px;line-height:1.8;max-width:66ch}
+  .dg-box{fill:var(--surface2);stroke:var(--rule2);stroke-width:1.2}
+  .dg-key{fill:var(--surface2);stroke:var(--seal);stroke-width:1.8}
+  .dg-end{fill:var(--surface2);stroke:var(--alert);stroke-width:1.8}
+  .dg-t{fill:var(--ink);font-size:13px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .dg-s{fill:var(--muted);font-size:10.5px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .dg-l{fill:var(--muted);font-size:10.5px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .ln{fill:none;stroke:var(--rule2);stroke-width:1.4}
+  .ln-g{fill:none;stroke:var(--gold);stroke-width:1.6}
+  .ln-r{fill:none;stroke:var(--alert);stroke-width:1.6}
+
+  /* ---------- loop list ---------- */
+  ol.loop{counter-reset:s;list-style:none;padding:0;margin:20px 0;max-width:68ch}
+  ol.loop li{
+    counter-increment:s;position:relative;padding:0 46px 16px 0;margin:0;
+    border-right:1px solid var(--rule);
+  }
+  ol.loop li::before{
+    content:counter(s);position:absolute;right:-13px;top:1px;width:26px;height:26px;
+    background:var(--surface);border:1px solid var(--rule2);border-radius:50%;
+    display:grid;place-items:center;font-size:11.5px;color:var(--seal);
+    font-variant-numeric:tabular-nums;font-weight:600;
+  }
+  ol.loop li:last-child{border-right-color:transparent;padding-bottom:0}
+  ol.loop li b{display:block;font-weight:600;margin-bottom:2px}
+  ol.loop li span{color:var(--muted);font-size:14px;line-height:1.8}
+
+  code{
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    background:var(--surface2);padding:1px 6px;border-radius:4px;direction:ltr;display:inline-block;
+  }
+  pre{
+    background:var(--surface);border:1px solid var(--rule);border-radius:8px;
+    padding:15px 17px;overflow-x:auto;direction:ltr;text-align:left;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.75;margin:18px 0;
+  }
+  a{color:var(--seal)}
+  :focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="doc">
+
+<header class="mast">
+  <span class="stamp">البند ١ من الخطة · مستند التصميم</span>
+  <h1>دفتر تصميم الحُكم</h1>
+  <p class="sub">كل نظام في اللعبة، وكل معادلة، وكل خيط بيربط نظام بالتاني — قبل ما نكتب سطر كود واحد. ده المرجع اللي هنرجع له طول المشروع، وأي حاجة مش مكتوبة هنا مش موجودة في اللعبة.</p>
+  <div class="meta">
+    <span>النسخة <b>١٫٠</b></span>
+    <span>الحالة <b>مسوّدة للمراجعة</b></span>
+    <span>اللي بعده <b>البند ٢ — جدول الأرقام</b></span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <nav class="rail" aria-label="فهرس المستند">
+    <div>الفهرس</div>
+    <a href="#s0"><b>٠</b>الفكرة</a>
+    <a href="#s1"><b>١</b>خريطة التأثيرات</a>
+    <a href="#s2"><b>٢</b>القواعد العامة</a>
+    <a href="#s3"><b>٣</b>المؤشرات العليا</a>
+    <a href="#s4"><b>٤</b>الخدمات</a>
+    <a href="#s5"><b>٥</b>الخزينة</a>
+    <a href="#s6"><b>٦</b>الوزراء</a>
+    <a href="#s7"><b>٧</b>الفساد</a>
+    <a href="#s8"><b>٨</b>الأحزاب والكتل</a>
+    <a href="#s9"><b>٩</b>طاقة القرارات</a>
+    <a href="#s10"><b>١٠</b>الأحداث</a>
+    <a href="#s11"><b>١١</b>الشغب والنهاية</a>
+    <a href="#s12"><b>١٢</b>المحافظات</a>
+    <a href="#s13"><b>١٣</b>حلقة الشهر</a>
+    <a href="#s14"><b>١٤</b>شكل البيانات</a>
+    <a href="#s15"><b>١٥</b>محتاج قرارك</a>
+  </nav>
+
+  <main>
+
+  <!-- ================= 0 ================= -->
+  <section id="s0">
+    <h2><span class="num">٠</span>الفكرة في سطرين</h2>
+    <p class="lede">إنت رئيس دولة خيالية. مهمتك تفضل في الكرسي أطول فترة ممكنة — وتجمع لنفسك أكبر مبلغ ممكن قبل ما تنزل.</p>
+
+    <p>اللاعب بيدير دولة شهر بشهر: بيوزّع فلوس على الخدمات، بيبني منشآت، بيعيّن وزرا ويعزلهم، بيتعامل مع أحزاب وكتل اجتماعية، وبيرد على مواقف بتيجي له. وفي كل ده قدامه إغراء دايم: <em>يسرق</em>.</p>
+
+    <p><strong>الخسارة:</strong> الشعب ينزل الشارع، الأحزاب تطالب بعزلك، وإنت تفشل في احتواء الموقف. ساعتها بتتعزل، وبتنتهي اللعبة بملخص حكمك.</p>
+
+    <p><strong>الفوز:</strong> مفيش "فوز" نهائي — فيه <em>أرقام</em>. عدد الشهور اللي فضلتها، والفلوس اللي طلعت بيها، وحالة الدولة اللي سبتها وراك. وشاشة النهاية بتحكم عليك بالتلاتة مع بعض.</p>
+
+    <div class="risk">
+      <b>ليه ده مهم</b>
+      اللاعب اللي بيسرق كتير بيطلع بفلوس كتير وحكم قصير. واللي ما بيسرقش بيحكم طويل ويطلع فاضي. <strong>مفيش استراتيجية واحدة صح</strong> — وده اللي بيخلي اللاعب يرجع يلعب تاني بأسلوب مختلف.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 1 ================= -->
+  <section id="s1">
+    <h2><span class="num">١</span>خريطة التأثيرات</h2>
+    <p class="lede">دي الماكينة كلها في صورة واحدة. كل سهم هنا هيبقى سطر كود بعدين — ولو سهم مش مرسوم هنا، يبقى مش موجود في اللعبة.</p>
+
+    <figure>
+      <div class="dgw">
+        <svg viewBox="0 0 980 840" role="img" aria-label="خريطة تأثيرات اللعبة: الضرايب تغذي الخزينة، والخزينة تتوزع على ميزانية التشغيل والبناء والسرقة، وده بيحدد مستوى الخدمة والرضا الشعبي، والسرقة بتغذي الرصيد الشخصي والفضايح، وفي الآخر الشغب بيقرر نهاية الحكم إلا لو رشيت الجيش">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor" opacity=".55"/>
+            </marker>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--gold)"/>
+            </marker>
+            <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--alert)"/>
+            </marker>
+          </defs>
+
+          <!-- R1 taxes -->
+          <rect class="dg-box" x="660" y="20" width="300" height="46" rx="7"/>
+          <text class="dg-t" x="810" y="49" text-anchor="middle">الضرايب وأسعار الخدمات</text>
+
+          <!-- R2 treasury -->
+          <rect class="dg-key" x="450" y="126" width="510" height="46" rx="7"/>
+          <text class="dg-t" x="705" y="155" text-anchor="middle">الخزينة</text>
+
+          <!-- R3 -->
+          <rect class="dg-box" x="730" y="232" width="230" height="46" rx="7"/>
+          <text class="dg-t" x="845" y="261" text-anchor="middle">ميزانية التشغيل</text>
+          <rect class="dg-box" x="450" y="232" width="240" height="46" rx="7"/>
+          <text class="dg-t" x="570" y="261" text-anchor="middle">بناء منشآت</text>
+          <rect class="dg-end" x="30" y="232" width="230" height="46" rx="7"/>
+          <text class="dg-t" x="145" y="261" text-anchor="middle">السرقة</text>
+
+          <!-- R4 -->
+          <rect class="dg-box" x="730" y="338" width="230" height="46" rx="7"/>
+          <text class="dg-t" x="845" y="367" text-anchor="middle">التشغيل %</text>
+          <rect class="dg-box" x="450" y="338" width="240" height="46" rx="7"/>
+          <text class="dg-t" x="570" y="367" text-anchor="middle">التغطية %</text>
+          <rect class="dg-end" x="30" y="338" width="230" height="46" rx="7"/>
+          <text class="dg-t" x="145" y="367" text-anchor="middle">رصيدك الشخصي</text>
+
+          <!-- R5 -->
+          <rect class="dg-key" x="450" y="444" width="510" height="46" rx="7"/>
+          <text class="dg-t" x="705" y="473" text-anchor="middle">مستوى الخدمة = التغطية × التشغيل</text>
+          <rect class="dg-box" x="96" y="444" width="164" height="46" rx="7"/>
+          <text class="dg-t" x="178" y="473" text-anchor="middle">فضيحة</text>
+
+          <!-- R6 -->
+          <rect class="dg-key" x="450" y="550" width="510" height="46" rx="7"/>
+          <text class="dg-t" x="705" y="579" text-anchor="middle">الرضا الشعبي</text>
+          <rect class="dg-box" x="278" y="550" width="152" height="46" rx="7"/>
+          <text class="dg-t" x="354" y="579" text-anchor="middle">الأحزاب</text>
+
+          <!-- R7 -->
+          <rect class="dg-key" x="278" y="640" width="152" height="46" rx="7"/>
+          <text class="dg-t" x="354" y="669" text-anchor="middle">الثبات السياسي</text>
+          <rect class="dg-box" x="30" y="640" width="200" height="46" rx="7"/>
+          <text class="dg-t" x="130" y="669" text-anchor="middle">رشوة الجيش</text>
+
+          <!-- R8 riot -->
+          <rect class="dg-end" x="278" y="726" width="682" height="46" rx="7"/>
+          <text class="dg-t" x="619" y="755" text-anchor="middle">الشغب ← المطالبة بالعزل ← نهاية الحكم</text>
+
+          <!-- arrows: taxes -> treasury -->
+          <path class="ln" d="M810,66 L810,126" marker-end="url(#a1)"/>
+          <!-- treasury -> 3 uses -->
+          <path class="ln-g" d="M845,172 L845,232" marker-end="url(#a2)"/>
+          <path class="ln-g" d="M570,172 L570,232" marker-end="url(#a2)"/>
+          <path class="ln-r" d="M450,149 L300,149 Q260,149 260,190 L260,232" marker-end="url(#a3)"/>
+
+          <!-- budget -> operating -->
+          <path class="ln" d="M845,278 L845,338" marker-end="url(#a1)"/>
+          <text class="dg-l" x="855" y="312">× كفاءة الوزير</text>
+          <!-- build -> coverage -->
+          <path class="ln" d="M570,278 L570,338" marker-end="url(#a1)"/>
+          <text class="dg-l" x="580" y="312">بعد شهور الإنشاء</text>
+          <!-- steal -> personal -->
+          <path class="ln-r" d="M145,278 L145,338" marker-end="url(#a3)"/>
+
+          <!-- operating + coverage -> service level -->
+          <path class="ln" d="M845,384 L845,444" marker-end="url(#a1)"/>
+          <path class="ln" d="M570,384 L570,444" marker-end="url(#a1)"/>
+          <!-- personal -> scandal -->
+          <path class="ln-r" d="M178,384 L178,444" marker-end="url(#a3)"/>
+          <!-- personal -> bribe (bypass lane on the far left) -->
+          <path class="ln-r" d="M60,384 L60,640" marker-end="url(#a3)"/>
+
+          <!-- service -> approval -->
+          <path class="ln" d="M705,490 L705,550" marker-end="url(#a1)"/>
+          <!-- taxes -> approval (negative, far right lane) -->
+          <path class="ln-r" d="M960,43 L972,43 L972,573 L960,573" marker-end="url(#a3)"/>
+          <text class="dg-l" x="946" y="300" text-anchor="end">الضرايب العالية تنقّص الرضا</text>
+          <!-- scandal -> parties -->
+          <path class="ln-r" d="M260,467 L300,467 L354,467 L354,550" marker-end="url(#a3)"/>
+          <!-- parties -> stability -->
+          <path class="ln" d="M354,596 L354,640" marker-end="url(#a1)"/>
+          <!-- approval -> riot -->
+          <path class="ln-r" d="M705,596 L705,726" marker-end="url(#a3)"/>
+          <text class="dg-l" x="715" y="668">لو نزل عن الحد</text>
+          <!-- stability -> riot -->
+          <path class="ln-r" d="M354,686 L354,726" marker-end="url(#a3)"/>
+          <!-- bribe -> riot (blocks) -->
+          <path class="ln-g" d="M230,663 L254,663 L254,749 L278,749" marker-end="url(#a2)"/>
+          <text class="dg-l" x="130" y="706" text-anchor="middle">توقفه مؤقتًا</text>
+        </svg>
+      </div>
+      <figcaption><strong>الأحمر</strong> = الطريق اللي بيوديك للخسارة · <strong>الذهبي</strong> = حركة الفلوس · <strong>الرمادي</strong> = تأثير عادي. لاحظ إن رصيدك الشخصي هو الحاجة الوحيدة اللي بتغذّي طريق الخسارة (الفضيحة) وبتوقفه (رشوة الجيش) في نفس الوقت — وده قلب اللعبة.</figcaption>
+    </figure>
+  </section>
+  <hr>
+
+  <!-- ================= 2 ================= -->
+  <section id="s2">
+    <h2><span class="num">٢</span>القواعد العامة</h2>
+    <p class="lede">قواعد بتسري على كل نظام في اللعبة. دي اللي بتخلي اللعبة "حاسة" إنها دولة مش آلة حاسبة.</p>
+
+    <h3>الوقت</h3>
+    <p>وحدة اللعبة هي <em>الشهر</em>. اللاعب بياخد قراراته وقتما يشاء، وبعدين بيدوس "الشهر الجاي" فتتنفذ كل الحسابات مرة واحدة. مفيش وقت حقيقي ولا مؤقتات — اللعبة بتستنى اللاعب.</p>
+
+    <h3>الأرقام</h3>
+    <ul>
+      <li>الفلوس <strong>بالمليون</strong>، أرقام صحيحة من غير كسور.</li>
+      <li>كل المؤشرات (رضا، ثبات، ولاء، كفاءة، مستوى خدمة) من <strong>٠ إلى ١٠٠</strong>.</li>
+      <li>الأرقام تتعرض بالأرقام العربية (٠١٢٣) عشان تناسب باقي الواجهة.</li>
+    </ul>
+
+    <h3>قاعدة التنعيم — أهم قاعدة في الملف</h3>
+    <div class="formula">
+      <div class="eq">المؤشر الجديد = القديم + (الهدف − القديم) × سرعة</div>
+      <p class="why">مفيش مؤشر بيقفز. لما تزوّد ميزانية الصحة، مستوى الخدمة ما بيطلعش على طول — بيتحرك ناحية قيمته الجديدة على مدى شهرين تلاتة. <strong>ليه:</strong> ده اللي بيمنع اللاعب إنه يصلح كل حاجة في شهر واحد قبل الانتخابات، وبيخلّي القرار المتأخر يوجع.</p>
+    </div>
+
+    <h3>قاعدة التأخير</h3>
+    <p>مفيش قرار بيدي نتيجة كاملة فورًا. الميزانية بتاخد شهرين، البناء بياخد شهور، الرضا بيتحرك ببطء، والفضيحة بتظهر بعد فترة من السرقة. <strong>ليه:</strong> لأن ده اللي بيخلي اللاعب يخطط بدل ما يتفاعل، وبيخلي الأخطاء ليها ثمن حقيقي.</p>
+
+    <h3>قاعدة الشفافية</h3>
+    <p>كل رقم في اللعبة اللاعب يقدر يعرف جه منين. لما يدوس على أي مؤشر، يشوف الحسبة اللي طلّعته. <strong>ليه:</strong> لعبة إدارة اللاعب مش فاهم فيها الأرقام جاية منين بتبقى لعبة حظ، وبيسيبها.</p>
+  </section>
+  <hr>
+
+  <!-- ================= 3 ================= -->
+  <section id="s3">
+    <h2><span class="num">٣</span>المؤشرات العليا</h2>
+    <p class="lede">خمسة أرقام بس هما اللي بيحددوا مصيرك، وأربعة منهم ظاهرين في الشريط العلوي في كل تاب.</p>
+
+    <div class="tw">
+      <table>
+        <thead>
+          <tr><th>المؤشر</th><th>المدى</th><th>بيتأثر بإيه</th><th>لو وقع يحصل إيه</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="k">الرضا الشعبي</td><td class="n">٠–١٠٠</td><td>مستويات الخدمات، عبء الضرايب والأسعار، الفضايح، الحملات الإعلامية، رضا الكتل الاجتماعية</td><td>الناس تنزل الشارع</td></tr>
+          <tr><td class="k">الثبات السياسي</td><td class="n">٠–١٠٠</td><td>نفوذ الأحزاب المعارضة، ولاء الوزراء، الفضايح المكشوفة، ولاء الجيش</td><td>الأحزاب تقدر تحرّك الشارع ضدك وتطالب بالعزل</td></tr>
+          <tr><td class="k">الخزينة</td><td class="n">مليون</td><td>الدخل ناقص المصروف كل شهر</td><td>مرتبات مش مدفوعة ← الخدمات تنهار بسرعة ← الرضا يقع</td></tr>
+          <tr><td class="k">رصيدك الشخصي</td><td class="n">مليون</td><td>السرقة بس</td><td>مفيش خسارة منه — بس هو نتيجتك النهائية، وهو اللي بترشي بيه</td></tr>
+          <tr><td class="k">طاقة القرارات</td><td class="n">٠–٦</td><td>بتتجدد كل شهر</td><td>مفيش خسارة — بس مش هتقدر تعمل حاجة الشهر ده</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="risk">
+      <b>قرار تصميم</b>
+      <strong>رصيدك الشخصي مش ظاهر في الشريط العلوي</strong> — ظاهر في تاب الخزينة بس، بخط باهت. ليه: عشان يبقى حاجة اللاعب بيروح يبصلها بنفسه، مش حاجة اللعبة بتلحّ عليه بيها. الإغراء اللي بتدوّر عليه أقوى من الإغراء اللي قدامك.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 4 ================= -->
+  <section id="s4">
+    <h2><span class="num">٤</span>نظام الخدمات</h2>
+    <p class="lede">قلب اللعبة. سبع خدمات، وكل واحدة فيها نوعين فلوس مختلفين تمامًا: فلوس بتشغّل اللي موجود، وفلوس بتبني جديد.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الخدمة</th><th>المنشأة</th><th>بتأثر على</th></tr></thead>
+        <tbody>
+          <tr><td class="k">💧 المياه</td><td>محطة مياه</td><td>الرضا · الصحة</td></tr>
+          <tr><td class="k">⚡ الكهرباء</td><td>محطة كهرباء</td><td>الرضا · دخل الشركات</td></tr>
+          <tr><td class="k">🚰 الصرف الصحي</td><td>محطة صرف</td><td>الرضا · الصحة</td></tr>
+          <tr><td class="k">🏥 الصحة</td><td>مستشفى</td><td>الرضا · نمو السكان</td></tr>
+          <tr><td class="k">🎓 التعليم</td><td>مدرسة</td><td>الرضا · دخل الضرايب على المدى البعيد</td></tr>
+          <tr><td class="k">👮 الشرطة</td><td>قسم شرطة</td><td>الرضا · قدرتك على احتواء الشغب</td></tr>
+          <tr><td class="k">🚒 المطافي والإسعاف</td><td>مركز إسعاف</td><td>الرضا · حجم الخسائر في الكوارث</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>المعادلات</h3>
+    <div class="formula">
+      <div class="eq">التغطية = الطاقة ÷ السكان &nbsp;(بحد أقصى ١٠٠٪)</div>
+      <p class="why">الطاقة بتيجي من عدد المنشآت المبنية. كل منشأة بتخدم عدد معين من الناس.</p>
+    </div>
+    <div class="formula">
+      <div class="eq">التشغيل = (الميزانية المصروفة × كفاءة الوزير) ÷ الميزانية المطلوبة</div>
+      <p class="why">الميزانية المطلوبة بتزيد لوحدها كل ما تبني منشآت جديدة. يعني اللي بنيته النهارده بيبقى عبء عليك بكرة.</p>
+    </div>
+    <div class="formula">
+      <div class="eq">مستوى الخدمة = التغطية × التشغيل</div>
+      <p class="why">ضرب مش جمع. ولذلك لو أي واحدة فيهم صفر، الخدمة صفر — مهما كانت التانية ١٠٠٪.</p>
+    </div>
+
+    <div class="trap">
+      <b>الفخ الأول — بنيت ومصرفتش</b>
+      عندك ١٠ مستشفيات وميزانية تكفي ٦. النتيجة: مباني نص فاضية، الخدمة ما اتحسنتش، والمصروف الشهري زاد عليك. اللاعب بيقع فيه لما يفتكر إن البناء لوحده حل.
+    </div>
+    <div class="trap">
+      <b>الفخ التاني — صرفت ومبنيتش</b>
+      ضخّيت فلوس في ٦ مستشفيات بتغطي نص السكان. الخدمة بتطلع لحد سقف وتقف، وكل جنيه بعد كده بيروح هدر. اللاعب بيقع فيه لما يفتكر إن الفلوس لوحدها حل.
+    </div>
+
+    <h3>البناء</h3>
+    <p>كل منشأة ليها: <strong>تكلفة إنشاء</strong> (مرة واحدة) · <strong>مدة إنشاء</strong> بالشهور · <strong>طاقة مضافة</strong> · و<strong>مصروف شهري إضافي</strong> بيبدأ من يوم ما تفتح. المشاريع تحت الإنشاء بتظهر في طابور، واللاعب يقدر <strong>يلغي</strong> مشروع — بس الفلوس اللي اتصرفت بتضيع.</p>
+
+    <h3>النمو السكاني</h3>
+    <p>السكان بيزيدوا كل سنة بنسبة تتأثر بمستوى الصحة والتعليم. <strong>ولذلك التغطية بتنزل لوحدها حتى لو مبنيتش ومهدمتش حاجة</strong> — وده اللي بيمنع اللاعب إنه يوصل لحالة استقرار ويسيب الموبايل.</p>
+  </section>
+  <hr>
+
+  <!-- ================= 5 ================= -->
+  <section id="s5">
+    <h2><span class="num">٥</span>نظام الخزينة</h2>
+    <p class="lede">مصدر كل حاجة، وأول حاجة بتتكسر.</p>
+
+    <h3>الدخل</h3>
+    <ul>
+      <li><strong>ضريبة الدخل</strong> — نسبة تحددها إنت. أعلى نسبة = دخل أكتر ورضا أقل.</li>
+      <li><strong>ضريبة الشركات</strong> — تتأثر بكتلة رجال الأعمال وبمستوى الكهرباء.</li>
+      <li><strong>فواتير الخدمات</strong> — سعر المياه والكهرباء والصرف. أعلى سعر = دخل أكتر ورضا أقل، والأثر على الرضا هنا <strong>أقوى من الضرايب</strong> لأنه بيتحس كل شهر في البيت.</li>
+    </ul>
+
+    <h3>المصروف</h3>
+    <ul>
+      <li><strong>ميزانيات التشغيل السبعة</strong> — أكبر بند.</li>
+      <li><strong>مرتبات الجهاز الإداري</strong> — بند ثابت بيزيد مع السكان.</li>
+      <li><strong>أقساط المشاريع تحت الإنشاء</strong>.</li>
+    </ul>
+
+    <div class="formula">
+      <div class="eq">الخزينة الجديدة = القديمة + الدخل − المصروف</div>
+      <p class="why">ولو الناتج بالسالب، الخزينة بتدخل عجز — والعجز ليه عقوبة فورية (تحت).</p>
+    </div>
+
+    <div class="trap">
+      <b>العجز</b>
+      لو الخزينة نزلت تحت الصفر، المرتبات ما بتتدفعش، و<strong>كل مستويات التشغيل بتنزل بسرعة مضاعفة</strong>. الدولة بتنهار في شهرين تلاتة مش سنة. ده أسرع طريق للخسارة في اللعبة، ومقصود كده.
+    </div>
+
+    <div class="open">
+      <b>مؤجل لقرارك</b>
+      <strong>الاقتراض.</strong> فكرة قوية جدًا لواحد محاسب: تقترض دلوقتي وتدفع فوايد كل شهر للأبد. بتحل أزمة النهارده وبتصنع أزمة بعد سنة. أنا شايفها إضافة ممتازة بس <strong>مش في أول نسخة</strong> — نضيفها بعد ما نتأكد إن الاقتصاد الأساسي متوازن.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 6 ================= -->
+  <section id="s6">
+    <h2><span class="num">٦</span>نظام الوزراء</h2>
+    <p class="lede">خمس وزرا، وكل واحد بوّابة على فلوسك.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الوزير</th><th>مسؤول عن</th></tr></thead>
+        <tbody>
+          <tr><td class="k">وزير المالية</td><td>كفاءته بتأثر على تحصيل الضرايب نفسه</td></tr>
+          <tr><td class="k">وزير الداخلية</td><td>الشرطة · واحتواء الشغب</td></tr>
+          <tr><td class="k">وزير الصحة</td><td>الصحة · المطافي والإسعاف</td></tr>
+          <tr><td class="k">وزير المرافق</td><td>المياه · الكهرباء · الصرف</td></tr>
+          <tr><td class="k">وزير الإعلام</td><td>الحملات الإعلامية · وسرعة انتشار الفضايح</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>المقياسان</h3>
+    <ul>
+      <li><strong>الكفاءة (٠–١٠٠)</strong> — النسبة اللي بتوصل فعلاً من كل جنيه بتديهوله. كفاءة ٦٠ يعني ٤٠٪ من ميزانية وزارته بتضيع.</li>
+      <li><strong>الولاء (٠–١٠٠)</strong> — احتمال إنه يغطي على سرقاتك، واحتمال إنه ما يتحالفش مع المعارضة.</li>
+    </ul>
+
+    <div class="formula">
+      <div class="eq">وزير كفء + ولاء واطي = خدمات كويسة وخطر عليك</div>
+      <p class="why">وزير كفاءته عالية بيحسّن الخدمات بفلوس أقل، بس لو ولاؤه نزل بيسرّب فضايحك للأحزاب. والعكس: الفاسد الموالي بيغطي عليك وبيبهدل الخدمات. <strong>مفيش وزير مثالي</strong> — لأن لو فيه، مفيش قرار.</p>
+    </div>
+
+    <h3>التعيين والعزل</h3>
+    <p>العزل بيكلّف <strong>طاقة قرارات</strong> و<strong>ثبات سياسي</strong> (كل عزل بيوصّل رسالة إنك مش مستقر). والوزير المعزول <strong>ولاؤه بيبقى صفر</strong> — وممكن يروح للمعارضة ومعاه اللي يعرفه عنك.</p>
+    <p>الوزير الجديد بييجي من قايمة مرشحين، وإنت شايف تقديرًا لكفاءته وولاؤه <strong>مش رقمًا دقيقًا</strong> ("يقال إنه نضيف"، "من رجال الحزب القومي"). الرقم الحقيقي بيتكشف بعد شهور من الشغل.</p>
+
+    <h3>ولاء بيتحرك</h3>
+    <p>الولاء مش ثابت: بيزيد لما تديله ميزانية كويسة أو تدافع عنه، وبينزل لما تقطع ميزانيته أو تعزل زميله أو لما حزبه يعاديك. وفيه فعل مباشر: <strong>اشترِ ولاءه</strong> من رصيدك الشخصي.</p>
+  </section>
+  <hr>
+
+  <!-- ================= 7 ================= -->
+  <section id="s7">
+    <h2><span class="num">٧</span>نظام الفساد</h2>
+    <p class="lede">هوية اللعبة. القرار اللي كل قرار تاني بيرجع له.</p>
+
+    <h3>السرقة</h3>
+    <p>فعل في مكتب الرئاسة. بتحدد مبلغ، بينتقل من الخزينة لرصيدك الشخصي، وبيكلفك <strong>طاقة قرارات</strong>. المبلغ الأكبر = خطر أكبر.</p>
+
+    <div class="formula">
+      <div class="eq">احتمال الفضيحة الشهري ← بيزيد بـ: حجم المسروق التراكمي · وزرا ولاؤهم واطي · أحزاب معارضة قوية · إعلام حر</div>
+      <p class="why">ولاحظ إنه <strong>تراكمي</strong>: السرقة الصغيرة المتكررة مش أأمن من الكبيرة مرة واحدة. اللي بيحميك مش قلة السرقة، ده ولاء الوزرا وضعف المعارضة — يعني <strong>لازم تنفق على حمايتك</strong>، وده بياكل من اللي سرقته.</p>
+    </div>
+
+    <h3>لما الفضيحة تنفجر</h3>
+    <ul>
+      <li>الرضا الشعبي بينزل نزلة كبيرة مرة واحدة (دي الاستثناء الوحيد من قاعدة التنعيم).</li>
+      <li>الثبات السياسي بينزل، والأحزاب المعارضة نفوذها بيزيد.</li>
+      <li>بيتفتح لك موقف: <strong>تنكر · تكبش وزير · تدفع تسكيت</strong> — وكل اختيار له ثمن مختلف.</li>
+    </ul>
+
+    <h3>وليه بتسرق أصلاً؟</h3>
+    <p>عشان رصيدك الشخصي هو <strong>الحاجة الوحيدة اللي بتوقف الشغب</strong> لما يقوم. لو الشعب نزل الشارع والجيش متردد، بتقدر تدفع من جيبك تشتري ولاء الجيش وتكسب شهور زيادة. <em>يعني السرقة هي اللي بتقرّب النهاية، وهي كمان اللي بتأجّلها.</em></p>
+  </section>
+  <hr>
+
+  <!-- ================= 8 ================= -->
+  <section id="s8">
+    <h2><span class="num">٨</span>الأحزاب والكتل الاجتماعية</h2>
+    <p class="lede">اتنين مختلفين تمامًا: الأحزاب بتحاربك في السياسة، والكتل بتحاربك في الشارع.</p>
+
+    <h3>الأحزاب الأربعة</h3>
+    <p>كل حزب ليه <strong>نفوذ (٠–١٠٠)</strong> و<strong>موقف منك (معاك / محايد / ضدك)</strong>.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>الحزب</th><th>عايز إيه</th><th>بيغضب لما</th></tr></thead>
+        <tbody>
+          <tr><td class="k">المحافظ</td><td>استقرار · إنفاق أقل · ضرايب أقل</td><td>تزوّد الضرايب أو تغيّر بسرعة</td></tr>
+          <tr><td class="k">الحديث</td><td>تعليم · صحة · إعلام حر</td><td>تقمع أو تقطع ميزانية التعليم</td></tr>
+          <tr><td class="k">العمالي</td><td>مرتبات · خدمات · أسعار واطية</td><td>ترفع أسعار الخدمات</td></tr>
+          <tr><td class="k">القومي</td><td>جيش قوي · مشاريع كبيرة</td><td>تقلّل إنفاق الجيش</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>الكتل الاجتماعية الخمسة</h3>
+    <p>كل كتلة ليها <strong>رضا خاص بيها</strong> و<strong>وزن في السكان</strong>. الرضا الشعبي العام هو المتوسط المرجّح لرضا الكتل.</p>
+    <div class="tw">
+      <table>
+        <thead><tr><th>الكتلة</th><th>بيهمها</th></tr></thead>
+        <tbody>
+          <tr><td class="k">المتدينين</td><td>الاستقرار الاجتماعي · الاحترام · وبيغضبوا من التغيير السريع</td></tr>
+          <tr><td class="k">الشباب</td><td>تعليم · شغل · حرية · وأسرع كتلة تنزل الشارع</td></tr>
+          <tr><td class="k">العمال</td><td>مرتبات · أسعار · مواصلات</td></tr>
+          <tr><td class="k">رجال الأعمال</td><td>كهرباء · ضرايب واطية · وبيموّلوا الأحزاب</td></tr>
+          <tr><td class="k">الجيش</td><td>ميزانيته · واحترامه — <strong>وهو الكتلة الوحيدة اللي رضاها بيحدد نجاح الرشوة</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="formula">
+      <div class="eq">الحزب القوي بيقدر يحرّك الكتلة الغاضبة</div>
+      <p class="why">لوحدها الكتلة الغاضبة بتتذمر بس. لكن لما حزب معارض نفوذه عالي يلاقي كتلة رضاها واطي، بيتحالف معاها ويحوّل التذمر لمظاهرة. <strong>ولذلك ممكن تعيش بكتلة غاضبة لو المعارضة ضعيفة، وممكن تقع بكتلة نص غاضبة لو المعارضة قوية.</strong></p>
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 9 ================= -->
+  <section id="s9">
+    <h2><span class="num">٩</span>طاقة القرارات ومكتب الرئاسة</h2>
+    <p class="lede">ليه الرئيس مش بيعمل كل حاجة في نفس الشهر؟ لأن وقته ورأسماله السياسي محدودين.</p>
+
+    <p>عندك <strong>٦ نقاط طاقة كل شهر</strong>، بتتجدد بالكامل. الأفعال في مكتب الرئاسة بتاكل منها:</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>الفعل</th><th>الطاقة</th><th>الأثر</th></tr></thead>
+        <tbody>
+          <tr><td class="k">💰 اسرق من الخزينة</td><td class="n">٢</td><td>+رصيدك · +احتمال الفضيحة</td></tr>
+          <tr><td class="k">🤝 اشترِ ولاء وزير</td><td class="n">١</td><td>+ولاء · −رصيدك الشخصي</td></tr>
+          <tr><td class="k">🗡️ اعزل وزير</td><td class="n">٢</td><td>وزير جديد · −ثبات سياسي</td></tr>
+          <tr><td class="k">📺 حملة إعلامية</td><td class="n">٢</td><td>+رضا مؤقت · −خزينة · والأثر بيقل كل ما تكررها</td></tr>
+          <tr><td class="k">🎖️ ادفع للجيش</td><td class="n">١</td><td>+رضا الجيش · −خزينة أو −رصيدك</td></tr>
+          <tr><td class="k">📜 تفاوض مع حزب</td><td class="n">٢</td><td>تحسّن موقف حزب مقابل تنازل</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="risk">
+      <b>مهم — تعديل الميزانيات مش بياكل طاقة</b>
+      توزيع الفلوس على الخدمات وتحديد الضرايب والبناء <strong>مجاني من ناحية الطاقة</strong>. الطاقة بس للأفعال السياسية. <strong>ليه:</strong> لأن إدارة الميزانية هي شغل الرئيس اليومي، مش قرار استثنائي — ولو خليناها بتاكل طاقة اللاعب هيحس إن اللعبة بتمنعه يلعب.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 10 ================= -->
+  <section id="s10">
+    <h2><span class="num">١٠</span>الأحداث والمواقف</h2>
+    <p class="lede">الروح. من غيرها اللعبة جدول أرقام.</p>
+
+    <h3>تلات أنواع</h3>
+    <ul>
+      <li><strong>أحداث عشوائية</strong> — بتحصل من غير سبب: فيضان، انفجار ماسورة، أزمة عالمية، اكتشاف بترول. بتضرب مؤشراتك وتفرض عليك تصرف.</li>
+      <li><strong>أحداث ناتجة عن حالتك</strong> — دي الأهم. الجرايم بتزيد لأن الشرطة ضعيفة، فبييجي لك موقف عن جريمة بشعة. <em>اللعبة بتديك النتيجة الطبيعية لإهمالك، فتحس إنها بتشوفك.</em></li>
+      <li><strong>مواقف مترابطة</strong> — قرارك النهارده بيفتح موقف بعد شهور. الوزير اللي عزلته بيرجع في حزب معارض.</li>
+    </ul>
+
+    <h3>شكل الموقف</h3>
+    <p>شخصية + نص + من ٢ لـ٤ اختيارات. كل اختيار له أثر مباشر على المؤشرات، وممكن يسيب <strong>علامة</strong> تستخدمها مواقف بعدين (مثال: <code>promised_raise</code>).</p>
+
+    <div class="risk">
+      <b>قاعدة الكتابة</b>
+      كل موقف لازم يبقى فيه <strong>اختيارين على الأقل ليهم منطق</strong>. لو فيه إجابة صح واضحة، الموقف ده مش قرار — ده امتحان، وامسحه.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 11 ================= -->
+  <section id="s11">
+    <h2><span class="num">١١</span>الشغب ونهاية الحكم</h2>
+    <p class="lede">النهاية الوحيدة في النسخة الأولى — وهي مرحلة، مش لحظة.</p>
+
+    <h3>الغليان</h3>
+    <p>فيه مؤشر مخفي اسمه <strong>الغليان</strong>. بيزيد كل شهر يكون فيه الرضا الشعبي تحت الحد <em>و</em> الثبات السياسي تحت الحد، وبيقل في الشهور الكويسة. ولما يوصل لحد معين، الشغب بيقوم.</p>
+    <p><strong>ليه مؤشر متراكم مش شرط لحظي:</strong> عشان شهر واحد سيء ما يخسّركش اللعبة، وعشان اللاعب ياخد <strong>إنذارات</strong> قبل الكارثة (الشريط العلوي بيبدأ ينبض بالأحمر) ويبقى قدامه فرصة يتصرف.</p>
+
+    <h3>لما الشغب يقوم — عندك ٣ طرق</h3>
+    <ol class="loop">
+      <li><b>الاحتواء بالخدمات والفلوس</b><span>تستجيب لمطالبهم: تنزّل الأسعار، تضخ فلوس. أبطأ طريقة، وبتكلف خزينتك، بس هي الوحيدة اللي بتحل المشكلة من جذرها.</span></li>
+      <li><b>القمع بالشرطة</b><span>بيعتمد على مستوى خدمة الشرطة وولاء وزير الداخلية. ينجح؟ الشغب يقف والرضا ينزل أكتر. يفشل؟ يكبر ويتحول لمطالبة بالعزل.</span></li>
+      <li><b>رشوة الجيش</b><span>من رصيدك الشخصي. التكلفة بتعتمد على حجم الشغب ورضا الجيش. بيوقف الشغب فورًا — بس <strong>مؤقتًا</strong>، والسبب لسه موجود، والجيش المرة الجاية هيطلب أكتر.</span></li>
+    </ol>
+
+    <h3>النهاية</h3>
+    <p>لو التلاتة فشلوا، بتتعزل. شاشة النهاية بتقول: عدد الشهور · الرصيد اللي طلعت بيه · حالة الدولة اللي سبتها · و<strong>لقب</strong> بيتحسب من التلاتة مع بعض (من "الرئيس المنسي" لـ"الحرامي الكبير" لـ"باني الدولة").</p>
+
+    <div class="open">
+      <b>محتاج قرارك بعدين</b>
+      هل فيه حد أقصى للحكم (مثلاً ٢٠ سنة وبعدين نهاية طبيعية)؟ ولا اللعبة مفتوحة لحد ما تقع؟ ده بيغير إحساس اللعبة تمامًا — بس ينفع نأجله لحد ما نجرب.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 12 ================= -->
+  <section id="s12">
+    <h2><span class="num">١٢</span>المحافظات</h2>
+    <p class="lede">آخر طبقة، وأكترها احتمالاً إننا نشيلها.</p>
+    <p>الفكرة: الدولة مقسومة لمحافظات، وكل محافظة ليها مستويات خدمات ورضا خاص بيها، وبتوزّع الميزانية عليها. المظاهرات بتبدأ في محافظة معينة.</p>
+    <div class="risk">
+      <b>تحفّظي المكتوب من دلوقتي</b>
+      ده بيضرب كل حساب في اللعبة في عدد المحافظات، وبيحوّل شاشة بسيطة لشاشة معقدة — <strong>مقابل إن اللاعب في الغالب هيوزّع بالتساوي ويخلص</strong>. لما نوصل للبند ده هقول لك رأيي بصراحة، والأغلب إني هرشّح نشيلها ونستبدلها بحاجة أرخص: المظاهرة بتبدأ في "الجنوب" أو "الشرق" كنص بس، من غير نظام كامل وراها.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 13 ================= -->
+  <section id="s13">
+    <h2><span class="num">١٣</span>حلقة الشهر</h2>
+    <p class="lede">لما اللاعب يدوس "الشهر الجاي" — ده الترتيب الدقيق للي بيحصل. الترتيب ده مهم: لو اتغير، نتايج اللعبة بتتغير.</p>
+
+    <ol class="loop">
+      <li><b>تحصيل الدخل</b><span>الضرايب والفواتير، مضروبة في كفاءة وزير المالية.</span></li>
+      <li><b>دفع المصروفات</b><span>ميزانيات التشغيل + المرتبات + أقساط الإنشاء. لو الناتج سالب، تتفعّل عقوبة العجز.</span></li>
+      <li><b>تقدّم المشاريع</b><span>شهر يتشال من كل مشروع. اللي خلص، طاقته بتتضاف والمصروف الشهري بتاعه بيبدأ.</span></li>
+      <li><b>حساب مستويات الخدمات</b><span>التغطية × التشغيل لكل خدمة، وبعدين قاعدة التنعيم.</span></li>
+      <li><b>تحديث رضا الكتل</b><span>كل كتلة بتتأثر بالخدمات اللي تهمها وبالأسعار.</span></li>
+      <li><b>حساب الرضا الشعبي</b><span>المتوسط المرجّح لرضا الكتل، ناقص أثر الفضايح.</span></li>
+      <li><b>تحديث الأحزاب</b><span>النفوذ والموقف، والتحالفات مع الكتل الغاضبة.</span></li>
+      <li><b>حساب الثبات السياسي</b>.</li>
+      <li><b>لفة الفساد</b><span>هل الفضيحة انفجرت الشهر ده؟</span></li>
+      <li><b>لفة الأحداث</b><span>اختيار حدث عشوائي أو حدث ناتج عن حالتك.</span></li>
+      <li><b>تحديث الغليان</b><span>وفحص هل الشغب قام.</span></li>
+      <li><b>نمو السكان · تجديد الطاقة · حفظ</b>.</li>
+    </ol>
+
+    <div class="risk">
+      <b>ليه الترتيب ده بالذات</b>
+      الفلوس الأول لأن كل حاجة بتعتمد عليها، والأحداث في الآخر عشان الحدث يشوف حالة الدولة بعد ما اتحدثت مش قبلها — عشان الموقف اللي بييجي لك يكون فعلاً معبّر عن وضعك دلوقتي.
+    </div>
+  </section>
+  <hr>
+
+  <!-- ================= 14 ================= -->
+  <section id="s14">
+    <h2><span class="num">١٤</span>شكل البيانات</h2>
+    <p class="lede">كل الأرقام والنصوص في ملفات منفصلة عن الكود — عشان تقدر تفتحها وتعدّلها بنفسك، وعشان الفاحص الآلي يقدر يراجعها قبل كل بناء.</p>
+
+<pre>data/
+  balance.json      // كل أرقام التوازن (البند ٢)
+  services.json     // الخدمات والمنشآت والتكاليف
+  ministers.json    // الوزراء وقوائم المرشحين
+  parties.json      // الأحزاب والكتل
+  actions.json      // أفعال مكتب الرئاسة وتكلفتها
+  events/
+    random.json     // الأحداث العشوائية
+    reactive.json   // الأحداث الناتجة عن حالة الدولة
+    chains.json     // المواقف المترابطة
+  endings.json      // الألقاب وشروطها</pre>
+
+    <p>مثال لموقف واحد:</p>
+<pre>{
+  "id": "police_crime_wave",
+  "speaker": "وزير الداخلية",
+  "face": "👮",
+  "requires": { "service.police": "&lt; 40" },
+  "text": "سيادة الرئيس، الجرايم زادت ٣٠٪ الشهر ده...",
+  "choices": [
+    { "text": "زوّد ميزانية الشرطة فورًا",
+      "effects": { "budget.police": "+15", "treasury": "-15" } },
+    { "text": "اطلع بيان إن الأرقام مبالغ فيها",
+      "effects": { "approval": "-3", "stability": "+2" },
+      "flag": "denied_crime" }
+  ]
+}</pre>
+  </section>
+  <hr>
+
+  <!-- ================= 15 ================= -->
+  <section id="s15">
+    <h2><span class="num">١٥</span>محتاج قرارك</h2>
+    <p class="lede">حاجات مقصود إني ما حسمتهاش لوحدي.</p>
+
+    <div class="open"><b>١ — اسم اللعبة</b>اللعبة لسه من غير اسم. الاسم بيأثر على الأيقونة وصفحة المتجر، فمحتاجينه قبل المرحلة الأخيرة مش دلوقتي — بس لو عندك اسم في بالك قوله.</div>
+    <div class="open"><b>٢ — الأرقام بالمليون؟</b>زي ما في الموك-اب (٨٩٠ مليون)، ولا أرقام مجردة أبسط (٨٩٠ وخلاص)؟ رأيي: المليون بيدي إحساس دولة حقيقية، وإنت محاسب فمش هيتعبك.</div>
+    <div class="open"><b>٣ — الوزراء خمسة؟</b>خمسة كفاية في رأيي. لو عايز تزوّد (زراعة، نقل، خارجية) قول دلوقتي عشان يدخلوا جدول الأرقام من الأول.</div>
+    <div class="open"><b>٤ — الكتل خمسة؟</b>نفس السؤال. زيادة كتلة = زيادة عمود في كل حسبة رضا.</div>
+    <div class="open"><b>٥ — الحد الأقصى للحكم؟</b>مفتوح لحد ما تقع، ولا فيه نهاية طبيعية بعد مدة؟</div>
+  </section>
+  <hr>
+
+  <section>
+    <h2><span class="num">✓</span>اللي بعده</h2>
+    <p>لما توافق على الملف ده (أو تقول لي أعدّل فيه إيه)، ننتقل للبند ٢: <strong>جدول الأرقام والتوازن</strong> — كل رقم في اللعبة بقيمته الابتدائية، عشان تراجعه بعين محاسب قبل ما نبني حاجة.</p>
+  </section>
+
+  </main>
+</div>
+</div>
+
+</body>
+</html>

@@ -5,7 +5,21 @@ Why: the balance document and the game must never disagree. The document's
 tables are generated from this file, and check_balance.py fails the build if
 a number in the document is not in the JSON.
 """
-import json, os, io, contextlib
+import json, os, sys, subprocess
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent   # repo root, whatever the cwd is
+DATA = ROOT / "data"
+DOCS = ROOT / "docs"
+
+def wrap_page(title, body):
+    """docs/ pages are standalone: GitHub Pages serves them with no wrapper."""
+    head, rest = body.split("</style>", 1)
+    return ('<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            + head + "</style>\n</head>\n<body>\n" + rest + "\n</body>\n</html>\n")
+import io, contextlib
+sys.path.insert(0, str(ROOT / "tools"))
 import sim
 
 out = {
@@ -56,8 +70,8 @@ out = {
     "population": {"monthly_growth_base": 0.0018, "health_penalty_coef": 0.0010},
 }
 
-os.makedirs("data", exist_ok=True)
-with open("data/balance.json", "w", encoding="utf-8") as f:
+DATA.mkdir(exist_ok=True)
+with open(DATA / "balance.json", "w", encoding="utf-8") as f:
     json.dump(out, f, ensure_ascii=False, indent=2)
 
 # capture the simulator's verdict so the document can quote real output

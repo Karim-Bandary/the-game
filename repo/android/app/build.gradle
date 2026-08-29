@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.karim.thegame'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.karim.thegame"
+        // 26 because the launcher icon is pure XML (adaptive). Below 26 Android
+        // needs raster PNGs, and binary files are painful to keep in this repo.
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "0.1"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// The app must ship the game that is in this repo, not whatever happens to be
+// sitting in assets. Doing this in Gradle rather than in CI keeps the build
+// correct wherever it runs, and gives the checker one place to verify.
+tasks.register('copyGame', Copy) {
+    from file("$rootDir/../game/index.html")
+    into file("src/main/assets")
+}
+
+tasks.named('preBuild') {
+    dependsOn 'copyGame'
+}
+
+// No dependencies at all. The game is one HTML file in a WebView; pulling in
+// appcompat or androidx would add hundreds of classes for nothing.
+dependencies {
+}

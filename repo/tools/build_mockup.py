@@ -5,11 +5,27 @@ numbers from data/balance.json and the simulator's settled month-0 state.
 Why generated: if the mockup showed different numbers from the balance
 document, Karim would be reviewing two different games.
 """
-import json, sim
+import json, os, sys, subprocess
+from pathlib import Path
 
-B = json.load(open("data/balance.json", encoding="utf-8"))
-sim.reset_reqs()
-st = sim.State()
+ROOT = Path(__file__).resolve().parent.parent   # repo root, whatever the cwd is
+DATA = ROOT / "data"
+DOCS = ROOT / "docs"
+
+def wrap_page(title, body):
+    """docs/ pages are standalone: GitHub Pages serves them with no wrapper."""
+    head, rest = body.split("</style>", 1)
+    return ('<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            + head + "</style>\n</head>\n<body>\n" + rest + "\n</body>\n</html>\n")
+
+B = json.load(open(DATA / "balance.json", encoding="utf-8"))
+
+# Month-0 numbers come from the game's own engine via tools/simulate.js, so the
+# mockup and the game can never show a different starting world.
+SIM = json.loads(subprocess.run(["node", str(ROOT / "tools" / "simulate.js"), "--json"],
+                                capture_output=True, text=True, check=True).stdout)
+D = SIM["detail"]
 
 SV = ["water", "power", "sewage", "health", "edu", "police", "fire"]
 GV = ["capital", "industrial", "agri", "south", "border"]
@@ -17,21 +33,25 @@ ICON = dict(water="💧", power="⚡", sewage="🚰", health="🏥", edu="🎓",
 
 data = {
     "month": 1, "year": 1,
-    "approval": round(st.approval), "stability": round(st.stability),
-    "inflation": st.inflation, "ap": 6, "apMax": 6,
-    "treasury": round(st.treasury), "personal": 0,
-    "tax": st.tax, "util": st.util, "subsidy": round(st.subsidy),
+    "approval": SIM["start"]["approval"], "stability": SIM["start"]["stability"],
+    "inflation": B["start"]["inflation"], "ap": 6, "apMax": 6,
+    "treasury": SIM["start"]["treasury"], "personal": 0,
+    "tax": B["start"]["tax_rate"], "util": B["start"]["utility_price"],
+    "subsidy": B["start"]["food_subsidy"],
     "services": [{
-        "id": k, "icon": ICON[k], "nm": sim.SERVICES[k]["nm"],
-        "ask": sim.BASE_REQ[k], "pct": round(st.pct[k]), "comp": round(st.comp[k]),
-        "build": sim.SERVICES[k]["build"], "months": sim.SERVICES[k]["months"],
-        "run": sim.SERVICES[k]["run"], "serves": sim.SERVICES[k]["cap"],
-        "nat": round(st.national(k)),
-        "gov": {g: {"cov": round(st.coverage(g, k)), "lvl": round(st.level[g][k]),
-                    "fac": st.fac[g][k]} for g in GV},
+        "id": k, "icon": ICON[k], "nm": B["services"][k]["name"],
+        "ask": D["services"][k]["ask"], "pct": D["services"][k]["pct"],
+        "comp": D["competence"],
+        "build": B["services"][k]["build_cost"], "months": B["services"][k]["build_months"],
+        "run": B["services"][k]["adds_monthly"], "serves": B["services"][k]["serves_millions"],
+        "nat": D["services"][k]["national"],
+        "gov": {g: {"cov": D["services"][k]["byGov"][g]["coverage"],
+                    "lvl": D["services"][k]["byGov"][g]["level"],
+                    "fac": D["services"][k]["byGov"][g]["facilities"]} for g in GV},
     } for k in SV],
-    "govs": [{"id": g, "nm": sim.GOVS[g]["nm"], "pop": sim.GOVS[g]["pop"],
-              "appr": round(st.gov_appr[g])} for g in GV],
+    "govs": [{"id": g, "nm": D["governorates"][g]["name"],
+              "pop": D["governorates"][g]["population"],
+              "appr": D["governorates"][g]["approval"]} for g in GV],
     "ministers": [
         {"nm": "رئيس الوزراء", "of": "الحكومة كلها", "loy": 71, "comp": 58, "party": "المحافظ"},
         {"nm": "وزير المالية", "of": "الضرايب والتحصيل", "loy": 64, "comp": 72, "party": "مستقل"},
@@ -326,6 +346,6 @@ nav();draw();
 </body>
 </html>"""
 
-open("app_mockup.html", "w", encoding="utf-8").write(
-    HTML.replace("__DATA__", json.dumps(data, ensure_ascii=False)))
-print("app_mockup.html written")
+(DOCS / "app-mockup.html").write_text(
+    HTML.replace("__DATA__", json.dumps(data, ensure_ascii=False)), encoding="utf-8")
+print("docs/app-mockup.html written")

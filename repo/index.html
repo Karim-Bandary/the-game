@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>مشروع الحُكم</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --paper:#edf0e9; --surface:#f7f9f4; --surface2:#e4e9dd; --ink:#1a1f1b;
+    --muted:#5c6a5f; --rule:#cdd5c5; --rule2:#b3bfa8;
+    --seal:#155c4c; --gold:#966b12; --alert:#9a3325; --shadow:rgba(26,31,27,.09);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#12160f; --surface:#1a1f18; --surface2:#232a20; --ink:#e4e9dc;
+      --muted:#93a08f; --rule:#333d2e; --rule2:#4a5742;
+      --seal:#5fb89e; --gold:#d9a94a; --alert:#e08878; --shadow:rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#12160f; --surface:#1a1f18; --surface2:#232a20; --ink:#e4e9dc;
+    --muted:#93a08f; --rule:#333d2e; --rule2:#4a5742;
+    --seal:#5fb89e; --gold:#d9a94a; --alert:#e08878; --shadow:rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);
+    font-family:'IBM Plex Sans Arabic','Segoe UI',Tahoma,sans-serif;
+    font-size:16px;line-height:1.95;margin:0}
+  .doc{direction:rtl;text-align:right;max-width:1120px;margin:0 auto;padding:0 20px 90px}
+
+  .mast{padding:54px 0 30px;border-bottom:2px solid var(--ink);margin-bottom:6px}
+  .stamp{display:inline-block;font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;
+    font-weight:500;letter-spacing:.18em;color:var(--seal);border:1.5px solid var(--seal);
+    border-radius:3px;padding:5px 11px;margin-bottom:20px}
+  h1{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;
+    font-size:clamp(30px,6vw,46px);line-height:1.35;margin:0 0 14px;text-wrap:balance}
+  .sub{color:var(--muted);font-size:15.5px;max-width:62ch;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:8px 26px;margin-top:24px;font-size:12.5px;color:var(--muted)}
+  .meta b{color:var(--ink);font-weight:600}
+
+  .wrap{display:grid;grid-template-columns:1fr;gap:0}
+  .rail{display:none}
+  @media(min-width:1000px){
+    .wrap{grid-template-columns:200px 1fr;gap:52px;align-items:start}
+    .rail{display:block;position:sticky;top:26px;padding-top:40px}
+  }
+  .rail div{font-family:'Noto Kufi Arabic',sans-serif;font-size:10.5px;letter-spacing:.14em;
+    color:var(--muted);margin-bottom:14px}
+  .rail a{display:block;font-size:13px;color:var(--muted);text-decoration:none;
+    padding:3px 11px 3px 0;border-right:2px solid transparent;line-height:1.5}
+  .rail a:hover,.rail a:focus-visible{color:var(--seal);border-right-color:var(--seal)}
+  .rail a b{color:var(--rule2);font-weight:500;margin-left:7px;font-variant-numeric:tabular-nums}
+  .rail a.new b{color:var(--gold)}
+
+  section{padding-top:46px;scroll-margin-top:20px}
+  h2{font-family:'Noto Kufi Arabic',sans-serif;font-weight:700;font-size:23px;line-height:1.5;
+    margin:0 0 6px;display:flex;align-items:baseline;gap:12px;text-wrap:balance}
+  h2 .num{font-size:12px;font-weight:500;color:var(--seal);border:1.5px solid var(--rule2);
+    border-radius:4px;padding:2px 8px;flex:none;font-variant-numeric:tabular-nums}
+  h2 .new{color:var(--gold);border-color:var(--gold)}
+  .lede{color:var(--muted);font-size:15px;margin:0 0 22px;max-width:66ch}
+  h3{font-family:'Noto Kufi Arabic',sans-serif;font-size:16px;font-weight:500;
+    margin:30px 0 10px;color:var(--ink)}
+  p{max-width:68ch;margin:0 0 15px}
+  ul{max-width:68ch;margin:0 0 15px;padding-right:20px}
+  li{margin-bottom:7px}
+  strong{font-weight:600}
+  em{font-style:normal;color:var(--seal);font-weight:600}
+  hr{border:0;border-top:1px solid var(--rule);margin:44px 0 0}
+
+  .formula{background:var(--surface);border:1px solid var(--rule2);border-radius:8px;
+    padding:16px 18px;margin:18px 0;box-shadow:0 1px 0 var(--shadow)}
+  .formula .eq{font-family:'Noto Kufi Arabic',sans-serif;font-size:17px;font-weight:500;
+    color:var(--seal);line-height:1.8;text-wrap:balance}
+  .formula .why{font-size:13.5px;color:var(--muted);margin:9px 0 0;max-width:64ch;line-height:1.85}
+
+  .trap,.open,.risk{border-right:3px solid;border-radius:0 8px 8px 0;padding:13px 16px;
+    margin:18px 0;font-size:14.5px;line-height:1.85;max-width:68ch;background:var(--surface)}
+  .trap{border-color:var(--alert)}
+  .open{border-color:var(--gold)}
+  .risk{border-color:var(--rule2)}
+  .trap b,.open b,.risk b{display:block;font-family:'Noto Kufi Arabic',sans-serif;
+    font-size:11px;letter-spacing:.1em;margin-bottom:6px;font-weight:500}
+  .trap b{color:var(--alert)}
+  .open b{color:var(--gold)}
+  .risk b{color:var(--muted)}
+
+  .tw{overflow-x:auto;margin:20px 0;border:1px solid var(--rule);border-radius:8px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:540px;font-size:14px}
+  th{font-family:'Noto Kufi Arabic',sans-serif;font-weight:500;font-size:11.5px;letter-spacing:.05em;
+    color:var(--muted);text-align:right;padding:11px 14px;border-bottom:1px solid var(--rule2);
+    background:var(--surface2);white-space:nowrap}
+  td{padding:11px 14px;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.7}
+  tr:last-child td{border-bottom:0}
+  td.n{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--seal);font-weight:500}
+  td.k{font-weight:600;white-space:nowrap}
+
+  figure{margin:26px 0 10px}
+  .dgw{overflow-x:auto;border:1px solid var(--rule);border-radius:10px;
+    background:var(--surface);padding:16px 14px}
+  .dgw svg{display:block;min-width:720px;width:100%;height:auto;color:var(--ink)}
+  .dg-box{fill:var(--surface2);stroke:var(--rule2);stroke-width:1.2}
+  .dg-key{fill:var(--surface2);stroke:var(--seal);stroke-width:1.8}
+  .dg-end{fill:var(--surface2);stroke:var(--alert);stroke-width:1.8}
+  .dg-t{fill:var(--ink);font-size:13px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .dg-s{fill:var(--muted);font-size:10.5px;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .ln{fill:none;stroke:var(--rule2);stroke-width:1.4}
+  .ln-g{fill:none;stroke:var(--gold);stroke-width:1.6}
+  .ln-r{fill:none;stroke:var(--alert);stroke-width:1.6}
+  figcaption{font-size:13px;color:var(--muted);margin-top:11px;line-height:1.8;max-width:66ch}
+
+  ol.loop{counter-reset:s;list-style:none;padding:0;margin:20px 0;max-width:68ch}
+  ol.loop li{counter-increment:s;position:relative;padding:0 46px 16px 0;margin:0;
+    border-right:1px solid var(--rule)}
+  ol.loop li::before{content:counter(s);position:absolute;right:-13px;top:1px;width:26px;height:26px;
+    background:var(--surface);border:1px solid var(--rule2);border-radius:50%;
+    display:grid;place-items:center;font-size:11.5px;color:var(--seal);
+    font-variant-numeric:tabular-nums;font-weight:600}
+  ol.loop li:last-child{border-right-color:transparent;padding-bottom:0}
+  ol.loop li b{display:block;font-weight:600;margin-bottom:2px}
+  ol.loop li span{color:var(--muted);font-size:14px;line-height:1.8}
+
+  code{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:13px;
+    background:var(--surface2);padding:1px 6px;border-radius:4px;direction:ltr;display:inline-block}
+  pre{background:var(--surface);border:1px solid var(--rule);border-radius:8px;
+    padding:15px 17px;overflow-x:auto;direction:ltr;text-align:left;
+    font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12.5px;line-height:1.75;margin:18px 0}
+  a{color:var(--seal)}
+  :focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<style>
+  .hub{max-width:680px;margin:0 auto;padding:0 20px 70px;direction:rtl;text-align:right}
+  .lk{display:flex;align-items:flex-start;gap:13px;background:var(--surface);
+      border:1px solid var(--rule);border-radius:12px;padding:15px;margin-bottom:9px;
+      text-decoration:none;color:var(--ink);transition:border-color .15s}
+  .lk:hover,.lk:focus-visible{border-color:var(--seal)}
+  .lk .ic{font-size:21px;flex:none;line-height:1.4}
+  .lk .tx{flex:1;min-width:0}
+  .lk .tx b{display:block;font-family:'Noto Kufi Arabic',sans-serif;font-size:15.5px;
+            font-weight:500;margin-bottom:3px}
+  .lk .tx span{display:block;font-size:12.5px;color:var(--muted);line-height:1.8}
+  .lk .tag{flex:none;font-size:9.5px;color:var(--muted);border:1px solid var(--rule2);
+           border-radius:20px;padding:2px 9px;white-space:nowrap}
+  .prog{display:flex;gap:3px;margin:22px 0 8px}
+  .prog i{flex:1;height:4px;border-radius:2px;background:var(--rule)}
+  .prog i.done{background:var(--seal)}
+  .prog i.now{background:var(--gold)}
+  .pl{font-size:12px;color:var(--muted)}
+</style>
+<div class="hub">
+  <header class="mast">
+    <span class="stamp">مشروع مستمر · التحديث تلقائي</span>
+    <h1>مشروع الحُكم</h1>
+    <p class="sub">لعبة محاكاة رئاسة دولة. الصفحة دي بتتحدّث لوحدها مع كل تعديل —
+    افتحها من الموبايل في أي وقت عشان توصل لكل حاجة في المشروع.</p>
+    <div class="prog"><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="done"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <p class="pl">البند ٨ من ٢٦ — تطبيق أندرويد</p>
+  </header>
+  <main style="padding-top:34px">
+    <a class="lk" href="game/" style="border-color:var(--seal);background:var(--surface2)">
+      <span class="ic">🏛️</span>
+      <span class="tx"><b>افتح اللعبة</b><span>تختار دولتك ونظام حكمك، وتدير سبع خدمات في خمس محافظات — تموّل، تبني، والشهور بتمشي والدولة بتتغير.</span></span>
+      <span class="tag">شغالة</span>
+    </a>
+
+    <a class="lk" href="docs/design.html">
+      <span class="ic">📐</span>
+      <span class="tx"><b>دفتر تصميم الحُكم</b><span>كل نظام في اللعبة وكل معادلة، وخريطتين بيوضحوا إزاي الأنظمة بتتكلم مع بعضها.</span></span>
+      <span class="tag">البند ١</span>
+    </a>
+
+    <a class="lk" href="docs/balance.html">
+      <span class="ic">⚖️</span>
+      <span class="tx"><b>ميزان الدولة</b><span>كل رقم في اللعبة بقيمته الابتدائية، ونتيجة المحاكي بعد ما لعب اللعبة ١٢٠ مرة.</span></span>
+      <span class="tag">البند ٢</span>
+    </a>
+
+    <a class="lk" href="docs/setup-mockup.html">
+      <span class="ic">🎬</span>
+      <span class="tx"><b>شاشات بداية اللعبة</b><span>اسم الدولة والحاكم، ونظام الحكم، وطبيعة المجتمع — وملخص بيوريك أثر اختيارك بالأرقام.</span></span>
+      <span class="tag">مسوّدة</span>
+    </a>
+
+    <a class="lk" href="docs/app-mockup.html">
+      <span class="ic">📱</span>
+      <span class="tx"><b>شاشات التطبيق الخمسة</b><span>الرئاسة والخزينة والخدمات والحكومة والسياسة — التابات والمساطر شغالة.</span></span>
+      <span class="tag">مسوّدة</span>
+    </a>
+
+    <a class="lk" href="docs/budget-mockup.html">
+      <span class="ic">🏗️</span>
+      <span class="tx"><b>شاشة الميزانية الأولى</b><span>أول تصور للخدمات والتشغيل والبناء. محفوظة للمقارنة.</span></span>
+      <span class="tag">قديمة</span>
+    </a>
+    <div class="risk" style="margin-top:26px">
+      <b>ليه الصفحة دي موجودة</b>
+      عشان تفتح أي حاجة في المشروع من موبايلك في ثانية، من غير ما تدوّر على ملف أو تفتح كمبيوتر.
+      وهي كمان الاختبار الحي لمسار البناء: لو الصفحة دي اتحدثت، يبقى المسار شغال.
+    </div>
+  </main>
+</div>
+</body>
+</html>
