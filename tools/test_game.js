@@ -33,7 +33,7 @@ function node(id) {
     dataset: {}, value: ''
   });
 }
-global.document = { getElementById: node, addEventListener() {} };
+global.document = { getElementById: node, addEventListener() {}, querySelector: () => null };
 global.setInterval = () => 1;
 global.clearInterval = () => {};
 
@@ -150,6 +150,36 @@ drawTop();
   const latin = visibleText(store[id]).match(/[0-9]/g);
   ok(!latin, 'الشريط العلوي (' + id + ') فيه أرقام إنجليزي: ' + (latin || []).join(''));
 });
+
+/* Any data-attribute the screens emit must be in the click handler's list, or
+   that button silently does nothing. This exact bug shipped once. */
+const emitted = new Set();
+function collectAttrs(html) {
+  for (const m of String(html || '').matchAll(/\s(data-[a-z]+)=/g)) emitted.add(m[1]);
+}
+setupState.step = 0; drawSetup(); collectAttrs(store.setupBody); collectAttrs(store.setupFoot);
+setupState.step = 1; drawSetup(); collectAttrs(store.setupBody); collectAttrs(store.setupFoot);
+setupState.gov = SETUP.government_types[1];
+setupState.step = 2; drawSetup(); collectAttrs(store.setupBody);
+setupState.soc = SETUP.society_types[0];
+setupState.country = 'ب'; setupState.ruler = 'ب'; startGame();
+for (const t of ['pres', 'treas', 'serv', 'govt', 'pol']) { tab = t; drawView(); collectAttrs(store.view); }
+drawNav(); collectAttrs(store.nav);
+openBuild('health'); collectAttrs(store.ovl);
+const known = new Set(CLICKABLE.concat(['data-pct', 'data-i', 'data-buildsvc']));
+for (const a of emitted) ok(known.has(a), 'الزرار بتاع ' + a + ' مش مسجّل في قايمة الضغطات');
+
+/* Every event the engine can raise must produce a sentence. A silent event is a
+   player waiting for something that already happened. */
+const engineSrc = scripts.find(x => x.includes('function tickMonth'));
+const emittedTypes = [...engineSrc.matchAll(/type:\s*'([a-z]+)'/g)].map(m => m[1]);
+ok(emittedTypes.length >= 4, 'مش لاقي أنواع الأحداث في المحرك');
+for (const type of new Set(emittedTypes)) {
+  const sample = { type: type, year: 2, gov: GOV_IDS[0], svc: SERVICE_IDS[0], pct: 50, reason: 'riot' };
+  const text = eventText(sample);
+  ok(text && text.length > 5, 'الحدث «' + type + '» مالوش نص يظهر للاعب');
+  ok(!/[0-9]/.test(text), 'نص الحدث «' + type + '» فيه أرقام إنجليزي: ' + text);
+}
 
 /* --------------------------------------------------------------- output */
 if (failures.length) {

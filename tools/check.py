@@ -190,6 +190,18 @@ def check_balance_json(problems):
                     problems.append(f"خدمة {k} ناقصها {field}")
                 elif s[field] <= 0:
                     problems.append(f"خدمة {k}: {field} لازم يكون أكبر من صفر")
+    # A facility that covers most of a province turns "where do I build" into a
+    # single obvious click, which is the one thing the governorate system exists
+    # to avoid. Keep every build a step, never a switch.
+    if "governorates" in b and "services" in b:
+        for sk, sv in b["services"].items():
+            for gk, gv in b["governorates"].items():
+                jump = sv["serves_millions"] / gv["population"] * 100
+                if jump > 45:
+                    problems.append(
+                        f"منشأة {sv['name']} الواحدة بتغطي {jump:.0f}٪ من {gv['name']} — "
+                        "كده البناء بيحل المحافظة بضغطة واحدة، والقرار بيضيع")
+
     if "governorates" in b and "services" in b:
         for g, gv in b["governorates"].items():
             if gv["population"] <= 0:

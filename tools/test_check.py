@@ -46,6 +46,8 @@ JSON_CASES = [
      lambda d: d["services"]["water"].__setitem__("approval_weight", 0.30)),
     ("تكلفة بناء بالسالب", "data/balance.json",
      lambda d: d["services"]["health"].__setitem__("build_cost", -5)),
+    ("منشأة بتحل المحافظة بضغطة", "data/balance.json",
+     lambda d: d["services"]["water"].__setitem__("serves_millions", 3.0)),
     ("معامل بيشاور على مفتاح مش موجود", "data/setup.json",
      lambda d: d["government_types"][0]["mods"].__setitem__("moraleX", 5)),
     ("تركيبة بتطلع برّه المدى", "data/setup.json",

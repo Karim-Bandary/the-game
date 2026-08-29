@@ -125,6 +125,74 @@ input:focus{outline:none;border-color:var(--gold2)}
 .krow b{color:var(--ink);font-variant-numeric:tabular-nums}
 .log{font-size:11.5px;color:var(--dim);line-height:1.9;border-right:2px solid var(--line2);
   padding-right:10px;margin-bottom:7px}
+
+/* ------------------------------------------------------- services screen */
+.gfilter{display:flex;gap:5px;overflow-x:auto;margin-bottom:11px;padding-bottom:3px;
+  scrollbar-width:none}
+.gfilter::-webkit-scrollbar{display:none}
+.gf{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:20px;
+  padding:6px 12px;font-size:11.5px;white-space:nowrap;font-family:inherit;flex:none}
+.gf.on{background:#1e2532;border-color:#3a4457;color:var(--gold)}
+.gf b{font-variant-numeric:tabular-nums;margin-right:5px}
+
+.svc{background:var(--panel);border:1px solid var(--line);border-radius:13px;
+  padding:12px;margin-bottom:8px}
+.svc .top1{display:flex;align-items:center;gap:9px}
+.svc .ico{font-size:17px;width:22px;text-align:center;flex:none}
+.svc .nm2{flex:1;font-size:13.5px}
+.svc .cost{font-size:10.5px;color:var(--dim);display:block;margin-top:2px}
+.svc .lvl{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+.two2{display:flex;gap:7px;margin-top:8px}
+.two2>div{flex:1}
+.two2 .lb2{font-size:8.5px;color:var(--dim2);display:block;margin-bottom:3px}
+.bar2{height:4px;background:#0d1017;border-radius:3px;overflow:hidden}
+.fl2{height:100%;border-radius:3px;transition:width .3s}
+.ctl{display:flex;align-items:center;gap:9px;margin-top:10px}
+.ctl input[type=range]{flex:1;accent-color:var(--gold2);height:22px}
+.ctl .pctv{font-size:12px;font-variant-numeric:tabular-nums;width:44px;text-align:left;color:var(--gold)}
+.build{flex:none;background:var(--panel2);border:1px solid #2c3f5a;color:#8fbde0;
+  border-radius:9px;padding:6px 10px;font-size:11px;font-family:inherit}
+.build[disabled]{opacity:.4;border-color:var(--line)}
+.hint{font-size:10px;color:var(--dim2);margin-top:7px;line-height:1.7}
+
+.queue{background:var(--panel);border:1px dashed #3a4457;border-radius:13px;padding:11px;margin-top:4px}
+.queue h4{margin:0 0 8px}
+.qi{display:flex;justify-content:space-between;font-size:12px;color:#b9b2a2;padding:4px 0}
+.qi span:last-child{color:var(--gold);font-size:11px;font-variant-numeric:tabular-nums}
+.qi .qsub{display:block;font-size:9.5px;color:var(--dim2);margin-top:2px}
+
+.note2{background:#1d1712;border:1px solid #4a3a22;border-radius:11px;padding:10px 12px;
+  font-size:11px;line-height:1.8;color:#c9a97a;margin-top:10px}
+
+/* ------------------------------------------------------------- overlay */
+.ovl{position:fixed;inset:0;background:rgba(5,7,11,.75);display:flex;align-items:flex-end;
+  justify-content:center;z-index:20;padding:10px}
+.ovl.hidden{display:none}
+.sheet{width:100%;max-width:500px;background:#171c26;border:1px solid #2e3648;
+  border-radius:20px;padding:17px 15px calc(15px + env(safe-area-inset-bottom));
+  max-height:86vh;overflow-y:auto}
+.sheet .sh{display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.sheet .sh .ic2{font-size:22px}
+.sheet .sh .nm3{font-size:16px;font-weight:700;flex:1}
+.sheet .x{color:var(--dim);font-size:20px;padding:0 6px;background:none;border:0}
+.sheet .lede2{font-size:11.5px;color:var(--dim);line-height:1.85;margin-bottom:13px}
+.pickg{width:100%;text-align:right;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:12px;padding:11px 12px;margin-bottom:7px;font-family:inherit;color:var(--ink)}
+.pickg[disabled]{opacity:.45}
+.pickg .r1{display:flex;justify-content:space-between;align-items:center}
+.pickg .gn{font-size:13.5px}
+.pickg .cv{font-size:12px;font-variant-numeric:tabular-nums}
+.pickg .r2{font-size:10px;color:var(--dim2);margin-top:4px}
+.calc2{background:#10141c;border:1px solid var(--line);border-radius:12px;padding:11px;
+  margin-bottom:12px;font-size:12.5px}
+.calc2 .cr2{display:flex;justify-content:space-between;padding:3px 0;color:#9aa3b6}
+.calc2 .cr2 b{font-variant-numeric:tabular-nums;color:var(--ink)}
+.warn2{color:var(--bad);font-size:11.5px;margin-top:9px;line-height:1.8}
+.toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#1e2532;
+  border:1px solid #3a4457;color:var(--ink);padding:11px 17px;border-radius:12px;font-size:12.5px;
+  opacity:0;transition:opacity .3s;pointer-events:none;z-index:30;text-align:center;
+  max-width:330px;line-height:1.7}
+.toast.on{opacity:1}
 </style>
 </head>
 <body>
@@ -156,6 +224,8 @@ input:focus{outline:none;border-color:var(--gold2)}
   </div>
 
 </div>
+<div class="ovl hidden" id="ovl"></div>
+<div class="toast" id="toast"></div>
 <script>/* ============================================================================
    Tab artwork — drawn in code, not photographed.
 
@@ -316,7 +386,7 @@ var ART_DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden=
    at build time as BALANCE.
    ========================================================================== */
 
-var BALANCE = {"_note": "كل الفلوس بالمليون. كل المؤشرات من 0 إلى 100 إلا التضخم (نسبة سنوية).", "start": {"treasury": 2400, "inflation": 6.0, "tax_rate": 20, "utility_price": 50, "food_subsidy": 60, "budget_pct": 118, "minister_competence": 65, "admin_salaries": 180, "population_millions": 12.0}, "governorates": {"capital": {"name": "العاصمة", "population": 4.2, "wealth": 1.3, "youth": 0.85, "facilities": {"water": 3, "power": 2, "sewage": 2, "health": 4, "edu": 5, "police": 6, "fire": 4}}, "industrial": {"name": "الصناعية", "population": 2.4, "wealth": 1.1, "youth": 1.0, "facilities": {"water": 2, "power": 1, "sewage": 1, "health": 2, "edu": 3, "police": 3, "fire": 2}}, "agri": {"name": "الزراعية", "population": 2.2, "wealth": 0.8, "youth": 1.05, "facilities": {"water": 1, "power": 1, "sewage": 1, "health": 2, "edu": 2, "police": 2, "fire": 2}}, "south": {"name": "الجنوب", "population": 2.6, "wealth": 0.6, "youth": 1.35, "facilities": {"water": 1, "power": 1, "sewage": 1, "health": 1, "edu": 3, "police": 3, "fire": 1}}, "border": {"name": "الحدودية", "population": 0.6, "wealth": 0.75, "youth": 1.0, "facilities": {"water": 1, "power": 1, "sewage": 0, "health": 1, "edu": 1, "police": 1, "fire": 1}}}, "services": {"water": {"name": "المياه", "serves_millions": 1.5, "monthly_ask": 60, "build_cost": 520, "build_months": 6, "adds_monthly": 9, "approval_weight": 0.16}, "power": {"name": "الكهربا", "serves_millions": 1.8, "monthly_ask": 105, "build_cost": 900, "build_months": 11, "adds_monthly": 16, "approval_weight": 0.15}, "sewage": {"name": "الصرف", "serves_millions": 2.0, "monthly_ask": 45, "build_cost": 610, "build_months": 9, "adds_monthly": 8, "approval_weight": 0.11}, "health": {"name": "الصحة", "serves_millions": 1.0, "monthly_ask": 82, "build_cost": 400, "build_months": 8, "adds_monthly": 7, "approval_weight": 0.17}, "edu": {"name": "التعليم", "serves_millions": 0.6, "monthly_ask": 95, "build_cost": 180, "build_months": 4, "adds_monthly": 6, "approval_weight": 0.14}, "police": {"name": "الشرطة", "serves_millions": 0.5, "monthly_ask": 58, "build_cost": 150, "build_months": 3, "adds_monthly": 5, "approval_weight": 0.15}, "fire": {"name": "الإسعاف", "serves_millions": 0.5, "monthly_ask": 35, "build_cost": 120, "build_months": 3, "adds_monthly": 4, "approval_weight": 0.12}}, "income": {"income_tax_coef": 2.3, "corporate_tax_coef": 33.0, "utility_bills_coef": 22.0, "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))", "tax_free_below": 18}, "food": {"agri_yield": 11.0, "world_price": 28, "consumption_per_million": 1.0, "price_smoothing": 0.55, "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج", "price_base": 50, "price_gap_coef": 6.0, "price_inflation_coef": 0.9, "price_inflation_free_below": 6.0, "subsidy_coef": 0.22}, "inflation": {"monthly_decay": 0.08, "floor": 3.0, "deficit_penalty": 1.4, "collapse_at": 150.0, "pain_starts_above": 9.0, "pain_coef": 1.5, "print_350_adds": 2.2}, "mood": {"smoothing": 0.3, "stability_smoothing": 0.22, "tax_pain_coef": 1.6, "tax_pain_free_below": 18, "utility_pain_coef": 0.8, "food_pain_coef": 0.85, "approval_danger": 35, "stability_danger": 40, "boil_cap": 100, "boil_cooldown": 7, "boil_gain_coef": 0.8, "boil_gain_base": 3.0, "settle_months": 25}, "population": {"monthly_growth_base": 0.0018, "health_penalty_coef": 0.001}, "deficit": {"operating_multiplier": 0.55, "decay_multiplier": 2.0}, "projects": {"monthly_cost_each": 9}, "stability": {"base": 74, "opposition_threshold": 55, "opposition_coef": 0.8, "inflation_coef": 0.6, "smoothing": 0.22}};
+var BALANCE = {"_note": "كل الفلوس بالمليون. كل المؤشرات من 0 إلى 100 إلا التضخم (نسبة سنوية).", "start": {"treasury": 2400, "inflation": 6.0, "tax_rate": 20, "utility_price": 50, "food_subsidy": 60, "budget_pct": 118, "minister_competence": 65, "admin_salaries": 180, "population_millions": 12.0}, "governorates": {"capital": {"name": "العاصمة", "population": 4.2, "wealth": 1.3, "youth": 0.85, "facilities": {"water": 27, "power": 18, "sewage": 18, "health": 36, "edu": 45, "police": 54, "fire": 36}}, "industrial": {"name": "الصناعية", "population": 2.4, "wealth": 1.1, "youth": 1.0, "facilities": {"water": 18, "power": 9, "sewage": 9, "health": 18, "edu": 27, "police": 27, "fire": 18}}, "agri": {"name": "الزراعية", "population": 2.2, "wealth": 0.8, "youth": 1.05, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 18, "edu": 18, "police": 18, "fire": 18}}, "south": {"name": "الجنوب", "population": 2.6, "wealth": 0.6, "youth": 1.35, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 9, "edu": 27, "police": 27, "fire": 9}}, "border": {"name": "الحدودية", "population": 0.6, "wealth": 0.75, "youth": 1.0, "facilities": {"water": 9, "power": 9, "sewage": 0, "health": 9, "edu": 9, "police": 9, "fire": 9}}}, "services": {"water": {"name": "المياه", "serves_millions": 0.167, "monthly_ask": 60, "build_cost": 58, "build_months": 6, "adds_monthly": 1.0, "approval_weight": 0.16}, "power": {"name": "الكهربا", "serves_millions": 0.2, "monthly_ask": 105, "build_cost": 100, "build_months": 11, "adds_monthly": 1.77, "approval_weight": 0.15}, "sewage": {"name": "الصرف", "serves_millions": 0.223, "monthly_ask": 45, "build_cost": 68, "build_months": 9, "adds_monthly": 0.9, "approval_weight": 0.11}, "health": {"name": "الصحة", "serves_millions": 0.11, "monthly_ask": 82, "build_cost": 44, "build_months": 8, "adds_monthly": 0.77, "approval_weight": 0.17}, "edu": {"name": "التعليم", "serves_millions": 0.067, "monthly_ask": 95, "build_cost": 20, "build_months": 4, "adds_monthly": 0.67, "approval_weight": 0.14}, "police": {"name": "الشرطة", "serves_millions": 0.057, "monthly_ask": 58, "build_cost": 17, "build_months": 3, "adds_monthly": 0.57, "approval_weight": 0.15}, "fire": {"name": "الإسعاف", "serves_millions": 0.057, "monthly_ask": 35, "build_cost": 13, "build_months": 3, "adds_monthly": 0.43, "approval_weight": 0.12}}, "income": {"income_tax_coef": 2.3, "corporate_tax_coef": 33.0, "utility_bills_coef": 22.0, "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))", "tax_free_below": 18}, "food": {"agri_yield": 11.0, "world_price": 28, "consumption_per_million": 1.0, "price_smoothing": 0.55, "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج", "price_base": 50, "price_gap_coef": 6.0, "price_inflation_coef": 0.9, "price_inflation_free_below": 6.0, "subsidy_coef": 0.22}, "inflation": {"monthly_decay": 0.08, "floor": 3.0, "deficit_penalty": 1.4, "collapse_at": 150.0, "pain_starts_above": 9.0, "pain_coef": 1.5, "print_350_adds": 2.2}, "mood": {"smoothing": 0.3, "stability_smoothing": 0.22, "tax_pain_coef": 1.6, "tax_pain_free_below": 18, "utility_pain_coef": 0.8, "food_pain_coef": 0.85, "approval_danger": 35, "stability_danger": 40, "boil_cap": 100, "boil_cooldown": 7, "boil_gain_coef": 0.8, "boil_gain_base": 3.0, "settle_months": 25}, "population": {"monthly_growth_base": 0.0018, "health_penalty_coef": 0.001}, "deficit": {"operating_multiplier": 0.55, "decay_multiplier": 2.0}, "projects": {"monthly_cost_each": 9}, "stability": {"base": 74, "opposition_threshold": 55, "opposition_coef": 0.8, "inflation_coef": 0.6, "smoothing": 0.22}};
 var SETUP   = {"government_types": [{"id": "monarchy", "ic": "👑", "nm": "ملكي", "tag": "الشرعية موروثة", "desc": "إنت ملك. الناس مش لازم تحبك عشان تفضل في الكرسي — بس تغيير أي حاجة صعب.", "mods": {"stability": 12, "ap": -1}, "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"], "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك", "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١.٥"], "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."}, {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق", "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.", "mods": {"competence": 4}, "good": ["كفاءة الوزرا +٤ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)", "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"], "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت", "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"], "feel": "لعبة بإيقاع. أربع سنين شغل، وامتحان."}, {"id": "dictator", "ic": "🎖️", "nm": "ديكتاتوري", "tag": "شرعيتك من الجيش", "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش هو الحاجة الوحيدة اللي بتخاف منها.", "mods": {"ap": 2, "approval": -10}, "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪", "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠.٦ — الإعلام مقفول"], "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار", "⚠️ لو رضا الجيش نزل تحت ٣٠ → انقلاب فوري ونهاية تالتة"], "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."}], "society_types": [{"id": "conservative", "ic": "🕌", "nm": "مجتمع محافظ", "tag": "بطيء ومستقر", "desc": "مجتمع متماسك بيقدّر الاستقرار. بيسامحك كتير — لو ما حاولتش تغيّره.", "mods": {"stability": 8}, "good": ["ثبات +٨", "الغليان بيتراكم أبطأ ١٥٪", "كتلة المتدينين أكبر — ولو راضية بتهدّي الباقي"], "bad": ["كل إصلاح كبير بيكلف ضعف الرضا", "التعليم أثره على الاقتصاد أقل ٢٠٪"]}, {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب", "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.", "mods": {"competence": 3}, "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٣"], "bad": ["الفضيحة بتنتشر ×١.٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]}, {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة", "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.", "mods": {"loyalty": 15, "competence": -6}, "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الجيش أرخص ٣٠٪", "المحافظات البعيدة أهدى"], "bad": ["كفاءة الوزرا −٦ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]}, {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية", "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.", "mods": {"approval": -6}, "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"], "bad": ["كل أزمة بتكبر ×١.٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]}], "base_start": {"approval": 52, "stability": 68, "treasury": 2400, "ap": 6, "inflation": 6.0, "competence": 65, "loyalty": 65}, "suggested_country_names": ["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان", "مملكة الشمال", "دولة المرتفعات", "بلاد النخيل"], "suggested_ruler_names": ["كريم عبد الحكم", "سليم الفارس", "عادل بن راشد", "نور الدين حلمي", "طارق العامري", "مراد الشريف"]};
 
 /* Seconds of real time per in-game month. Slow is deliberately slow: the player
@@ -601,8 +671,12 @@ function tickMonth(S) {
   // 14. the boil, and the two endings
   var md = BALANCE.mood;
   if (S.approval < md.approval_danger && S.stability < md.stability_danger) {
+    var boilBefore = S.boil;
     S.boil += (md.approval_danger - S.approval) * md.boil_gain_coef + md.boil_gain_base;
-    if (S.boil > 0 && S.boil < md.boil_cap) events.push({ type: 'boiling', boil: Math.round(S.boil) });
+    var step = md.boil_cap / 4;
+    if (Math.floor(S.boil / step) > Math.floor(boilBefore / step) && S.boil < md.boil_cap) {
+      events.push({ type: 'boiling', pct: Math.round(S.boil / md.boil_cap * 100) });
+    }
   } else {
     S.boil = Math.max(0, S.boil - md.boil_cooldown);
   }
@@ -665,6 +739,12 @@ function ar(n) {
    is suddenly in a different script from its neighbours. */
 function arDec(n, places) {
   return n.toFixed(places).replace(/\./g, '٫').replace(/\d/g, function (d) { return AR[+d]; });
+}
+/* Capacities are fractions of a million; a bare decimal is hard to read and can
+   reorder badly in an RTL line. Say small numbers in thousands instead. */
+function arPeople(millions) {
+  if (millions < 1) return ar(Math.round(millions * 1000)) + ' ألف نسمة';
+  return arDec(millions, 1) + ' مليون نسمة';
 }
 function el(id) { return document.getElementById(id); }
 
@@ -768,12 +848,154 @@ function drawSetup() {
   el('setupFoot').innerHTML = setupFoot();
 }
 
+
+/* ------------------------------------------------------------- services */
+/* The governorate filter is the whole point of this screen: the national
+   average hides that somebody is living without a sewer. Picking a province
+   swaps every number below from the average to that province's reality. */
+var govFilter = 'all';
+
+function svcColor(v) { return v >= 65 ? 'var(--good)' : v >= 45 ? 'var(--warn)' : 'var(--bad)'; }
+
+function svcNumbers(id) {
+  var op = operating(S, id);
+  if (govFilter === 'all') {
+    var lvl = nationalLevel(S, id);
+    // Back out the average coverage so the two bars still multiply to the level.
+    return { op: op, cov: op > 0 ? lvl / op * 100 : 0, lvl: lvl, fac: null };
+  }
+  return { op: op, cov: coverage(S, govFilter, id), lvl: S.level[govFilter][id],
+           fac: S.fac[govFilter][id] };
+}
+
+function serviceCostLine(id, n) {
+  var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+  if (n.fac === null) return ar(monthly) + 'م/شهر على مستوى الدولة';
+  return ar(n.fac) + ' منشأة في ' + BALANCE.governorates[govFilter].name;
+}
+
+function servView() {
+  var h = '<div class="gfilter">'
+    + '<button class="gf ' + (govFilter === 'all' ? 'on' : '') + '" data-gf="all">الدولة كلها</button>';
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    var g = GOV_IDS[i];
+    h += '<button class="gf ' + (govFilter === g ? 'on' : '') + '" data-gf="' + g + '">'
+      + BALANCE.governorates[g].name
+      + '<b style="color:' + svcColor(S.govAppr[g]) + '">' + ar(S.govAppr[g]) + '</b></button>';
+  }
+  h += '</div>';
+
+  for (var j = 0; j < SERVICE_IDS.length; j++) {
+    var id = SERVICE_IDS[j], sd = BALANCE.services[id], n = svcNumbers(id);
+    var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+    h += '<div class="svc">'
+      + '<div class="top1"><span class="ico">' + SVC_ICON[id] + '</span>'
+      + '<span class="nm2">' + sd.name
+      + '<span class="cost" id="cost-' + id + '">' + serviceCostLine(id, n) + '</span></span>'
+      + '<span class="lvl" id="lvl-' + id + '" style="color:' + svcColor(n.lvl) + '">' + ar(n.lvl) + '</span></div>'
+      + '<div class="two2">'
+      + '<div><span class="lb2" id="covl-' + id + '">التغطية ' + ar(n.cov) + '٪</span>'
+      + '<div class="bar2"><div class="fl2" id="covb-' + id + '" style="width:' + Math.min(100, n.cov)
+      + '%;background:var(--info)"></div></div></div>'
+      + '<div><span class="lb2" id="opl-' + id + '">التشغيل ' + ar(n.op) + '٪</span>'
+      + '<div class="bar2"><div class="fl2" id="opb-' + id + '" style="width:' + Math.min(100, n.op)
+      + '%;background:var(--gold2)"></div></div></div></div>'
+      + '<div class="ctl">'
+      + '<button class="build" data-build="' + id + '">🏗️ ابني</button>'
+      + '<input type="range" min="0" max="160" step="2" value="' + Math.round(S.pct[id])
+      + '" data-pct="' + id + '">'
+      + '<span class="pctv" id="pctv-' + id + '">' + ar(S.pct[id]) + '٪</span>'
+      + '</div></div>';
+  }
+
+  if (S.projects.length) {
+    h += '<div class="queue"><h4>تحت الإنشاء</h4>';
+    for (var k = 0; k < S.projects.length; k++) {
+      var pr = S.projects[k];
+      h += '<div class="qi"><span>' + BALANCE.services[pr.svc].name + ' — '
+        + BALANCE.governorates[pr.gov].name
+        + '<span class="qsub">لما يفتح: +' + ar(BALANCE.services[pr.svc].adds_monthly)
+        + 'م على المصروف الشهري للأبد</span></span>'
+        + '<span>' + ar(pr.left) + ' شهور</span></div>';
+    }
+    h += '</div>';
+  }
+
+  var need = Math.ceil(100 / (S.competence / 100));
+  h += '<div class="note2">⚠️ تمويل ١٠٠٪ مش معناه تشغيل ١٠٠٪. كفاءة وزرائك '
+    + ar(S.competence) + '، يعني عشان توصل تشغيل كامل لازم تموّل <b>' + ar(need)
+    + '٪</b> — أو تجيب وزرا أكفأ.</div>';
+  return h;
+}
+
+/* Sliders must not rebuild the screen: redrawing mid-drag drops the thumb from
+   under the player's finger. Update only the numbers that moved. */
+function refreshService(id) {
+  var n = svcNumbers(id);
+  var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+  el('pctv-' + id).textContent = ar(S.pct[id]) + '٪';
+  el('opl-' + id).textContent = 'التشغيل ' + ar(n.op) + '٪';
+  el('opb-' + id).style.width = Math.min(100, n.op) + '%';
+  el('lvl-' + id).textContent = ar(n.lvl);
+  el('lvl-' + id).style.color = svcColor(n.lvl);
+  el('cost-' + id).textContent = serviceCostLine(id, n);
+}
+
+/* ---- the build sheet -------------------------------------------------- */
+function openBuild(id) {
+  var sd = BALANCE.services[id], cost = projectCost(S, id);
+  var h = '<div class="sheet"><div class="sh"><span class="ic2">' + SVC_ICON[id] + '</span>'
+    + '<span class="nm3">ابني ' + sd.name + '</span>'
+    + '<button class="x" data-close="1">✕</button></div>'
+    + '<p class="lede2">اختار المحافظة. المنشأة الواحدة بتخدم '
+    + arPeople(sd.serves_millions) + '.</p>'
+    + '<div class="calc2">'
+    + '<div class="cr2"><span>تكلفة الإنشاء</span><b>' + ar(cost) + 'م</b></div>'
+    + '<div class="cr2"><span>مدة الإنشاء</span><b>' + ar(sd.build_months) + ' شهور</b></div>'
+    + '<div class="cr2"><span>وبعد ما يفتح</span><b>+' + ar(sd.adds_monthly) + 'م كل شهر للأبد</b></div>'
+    + '<div class="cr2"><span>الخزينة دلوقتي</span><b style="color:'
+    + (S.treasury >= cost ? 'var(--good)' : 'var(--bad)') + '">' + ar(S.treasury) + 'م</b></div>'
+    + '</div>';
+
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    var g = GOV_IDS[i], cov = coverage(S, g, id);
+    var afford = S.treasury >= cost;
+    h += '<button class="pickg" data-buildgov="' + g + '" data-buildsvc="' + id + '"'
+      + (afford ? '' : ' disabled') + '>'
+      + '<div class="r1"><span class="gn">' + BALANCE.governorates[g].name + '</span>'
+      + '<span class="cv" style="color:' + svcColor(cov) + '">تغطية ' + ar(cov) + '٪</span></div>'
+      + '<div class="r2">' + ar(S.fac[g][id]) + ' منشأة · '
+      + arPeople(S.pop[g]) + ' · التغطية هتبقى '
+      + ar(Math.min(100, (S.fac[g][id] + 1) * sd.serves_millions / S.pop[g] * 100)) + '٪</div>'
+      + '</button>';
+  }
+  if (S.treasury < cost) {
+    h += '<div class="warn2">الخزينة مش كفاية — ناقصك ' + ar(cost - S.treasury) + 'م.</div>';
+  }
+  h += '</div>';
+  el('ovl').innerHTML = h;
+  el('ovl').classList.remove('hidden');
+}
+
+function closeSheet() { el('ovl').classList.add('hidden'); el('ovl').innerHTML = ''; }
+
+function toast(msg) {
+  var t = el('toast');
+  t.innerHTML = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { t.classList.remove('on'); }, 3200);
+}
+
 /* ------------------------------------------------------------------- game */
 var TABS = [['pres', '🏛️', 'الرئاسة'], ['treas', '💰', 'الخزينة'], ['serv', '🏗️', 'الخدمات'],
             ['govt', '👔', 'الحكومة'], ['pol', '⚖️', 'السياسة']];
 
 /* One line under each tab's title. Not decoration — it tells the player what
    this screen is FOR before they have read a single number on it. */
+var SVC_ICON = { water: '💧', power: '⚡', sewage: '🚰', health: '🏥',
+                 edu: '🎓', police: '👮', fire: '🚒' };
+
 var BAND_SUB = {
   pres: 'مكتبك · وقراراتك',
   treas: 'الدخل والمصروف · وجيبك',
@@ -787,7 +1009,6 @@ var BAND_SUB = {
 var SOON = {
   pres: ['🏛️', 'الرئاسة', 'المواقف اللي بتيجي لك، ومكتب الرئاسة والأفعال اللي بتبدأها إنت.', 'البند ١٢'],
   treas: ['💰', 'الخزينة', 'الدخل والمصروف والضرايب وأسعار الخدمات ودعم الغذاء.', 'البند ٨'],
-  serv: ['🏗️', 'الخدمات', 'السبع خدمات، التشغيل والبناء، وفلتر المحافظات الخمسة.', 'البند ٧'],
   govt: ['👔', 'الحكومة', 'رئيس الوزراء والوزرا التمنية، الولاء والكفاءة، والبنك المركزي.', 'البند ١٠'],
   pol: ['⚖️', 'السياسة', 'الأحزاب الأربعة والكتل الاجتماعية الخمسة والصراع بينهم.', 'البند ١٣']
 };
@@ -820,8 +1041,10 @@ function drawNav() {
 function drawView() {
   var name = '';
   for (var i = 0; i < TABS.length; i++) if (TABS[i][0] === tab) name = TABS[i][2];
+  var sub = BAND_SUB[tab];
+  if (tab === 'serv' && govFilter !== 'all') sub = BALANCE.governorates[govFilter].name + ' — بس';
   var h = '<div class="band">' + ART[tab]
-    + '<div class="ttl">' + name + '</div><div class="sub">' + BAND_SUB[tab] + '</div></div><div class="pad">';
+    + '<div class="ttl">' + name + '</div><div class="sub">' + sub + '</div></div><div class="pad">';
   if (tab === 'pres') {
     var g = govOf(S), s = socOf(S);
     h += '<div class="card"><h3>' + esc(S.country) + '</h3>'
@@ -852,6 +1075,12 @@ function drawView() {
         + '</div>';
     }
   }
+  if (tab === 'serv') {
+    el('view').innerHTML = h + servView() + '</div>';
+    var sel = document.querySelector('.gf.on');
+    if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest', inline: 'center' });
+    return;
+  }
   var k = SOON[tab];
   h += '<div class="soon"><span class="ic">' + k[0] + '</span><h3>' + k[1] + '</h3>'
     + '<p>' + k[2] + '</p><span class="item">لسه بيتبني — ' + k[3] + '</span></div>';
@@ -878,6 +1107,23 @@ function setRunning(v) { running = v; schedule(); drawClock(); }
    ar() here, so nothing can reach the screen in Latin digits. */
 function eventText(e) {
   if (e.type === 'year') return 'بدأت السنة ' + ar(e.year) + '.';
+  if (e.type === 'built') {
+    return '🏗️ افتتح ' + BALANCE.services[e.svc].name + ' جديد في '
+      + BALANCE.governorates[e.gov].name + ' — والمصروف الشهري زاد '
+      + arDec(BALANCE.services[e.svc].adds_monthly, 1) + 'م للأبد.';
+  }
+  if (e.type === 'deficit') {
+    return '⚠️ الخزينة دخلت عجز. المرتبات مش مدفوعة، والخدمات بتنهار بسرعة مضاعفة.';
+  }
+  if (e.type === 'boiling') {
+    return '🔥 الغليان وصل ' + ar(e.pct) + '٪ — الشارع مش مطمئن.';
+  }
+  if (e.type === 'end') {
+    if (e.reason === 'riot') {
+      return '💥 قام الشغب في ' + BALANCE.governorates[e.gov].name + ' وانتهى حكمك بالعزل.';
+    }
+    return '💥 الاقتصاد انهار من التضخم. انتهى حكمك.';
+  }
   return e.text || '';
 }
 
@@ -886,6 +1132,11 @@ function step() {
   events.forEach(function (e) {
     var line = eventText(e);
     if (line) S.log.push(line);
+    // A finished project, a deficit or the end are things the player must not
+    // scroll past — put them in front of whichever screen they are on.
+    if (e.type === 'built' || e.type === 'deficit' || e.type === 'end' || e.type === 'boiling') {
+      toast(line);
+    }
   });
   // Anything the player must see stops the clock. Later this is where a crisis,
   // a scandal or a finished project will pause the game for a decision.
@@ -894,8 +1145,13 @@ function step() {
 }
 
 /* ----------------------------------------------------------------- events */
+var CLICKABLE = ['data-pick', 'data-nav', 'data-roll', 'data-tab', 'data-clock',
+                 'data-gf', 'data-build', 'data-close', 'data-buildgov'];
+
 document.addEventListener('click', function (ev) {
-  var t = ev.target.closest('[data-pick],[data-nav],[data-roll],[data-tab],[data-clock]');
+  // Every clickable attribute must be listed here or its button does nothing.
+  // Forgetting one is silent — the button simply never responds.
+  var t = ev.target.closest('[' + CLICKABLE.join('],[') + ']');
   if (!t) return;
   if (t.dataset.pick) {
     var list = t.dataset.pick === 'gov' ? SETUP.government_types : SETUP.society_types;
@@ -914,11 +1170,35 @@ drawSetup();
     else startGame();
   } else if (t.dataset.tab) {
     tab = t.dataset.tab; drawNav(); drawView();
+  } else if (t.dataset.gf) {
+    govFilter = t.dataset.gf; drawView();
+  } else if (t.dataset.build) {
+    openBuild(t.dataset.build);
+  } else if (t.dataset.close) {
+    closeSheet();
+  } else if (t.dataset.buildgov) {
+    var err = startProject(S, t.dataset.buildgov, t.dataset.buildsvc);
+    closeSheet();
+    if (err) { toast(err); }
+    else {
+      toast('🏗️ بدأ إنشاء ' + BALANCE.services[t.dataset.buildsvc].name + ' في '
+        + BALANCE.governorates[t.dataset.buildgov].name);
+      drawGame();
+    }
   } else if (t.dataset.clock === 'pp') {
     setRunning(!running);
   } else if (t.dataset.clock) {
     speed = +t.dataset.clock; schedule(); drawClock();
   }
+});
+
+/* Range inputs fire "input" on every pixel of a drag, so this must stay cheap
+   and must not touch the DOM the slider itself lives in. */
+document.addEventListener('input', function (ev) {
+  var id = ev.target && ev.target.dataset && ev.target.dataset.pct;
+  if (!id || !S) return;
+  S.pct[id] = +ev.target.value;
+  refreshService(id);
 });
 
 function captureNames() {

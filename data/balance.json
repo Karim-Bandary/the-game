@@ -18,13 +18,13 @@
       "wealth": 1.3,
       "youth": 0.85,
       "facilities": {
-        "water": 3,
-        "power": 2,
-        "sewage": 2,
-        "health": 4,
-        "edu": 5,
-        "police": 6,
-        "fire": 4
+        "water": 27,
+        "power": 18,
+        "sewage": 18,
+        "health": 36,
+        "edu": 45,
+        "police": 54,
+        "fire": 36
       }
     },
     "industrial": {
@@ -33,13 +33,13 @@
       "wealth": 1.1,
       "youth": 1.0,
       "facilities": {
-        "water": 2,
-        "power": 1,
-        "sewage": 1,
-        "health": 2,
-        "edu": 3,
-        "police": 3,
-        "fire": 2
+        "water": 18,
+        "power": 9,
+        "sewage": 9,
+        "health": 18,
+        "edu": 27,
+        "police": 27,
+        "fire": 18
       }
     },
     "agri": {
@@ -48,13 +48,13 @@
       "wealth": 0.8,
       "youth": 1.05,
       "facilities": {
-        "water": 1,
-        "power": 1,
-        "sewage": 1,
-        "health": 2,
-        "edu": 2,
-        "police": 2,
-        "fire": 2
+        "water": 9,
+        "power": 9,
+        "sewage": 9,
+        "health": 18,
+        "edu": 18,
+        "police": 18,
+        "fire": 18
       }
     },
     "south": {
@@ -63,13 +63,13 @@
       "wealth": 0.6,
       "youth": 1.35,
       "facilities": {
-        "water": 1,
-        "power": 1,
-        "sewage": 1,
-        "health": 1,
-        "edu": 3,
-        "police": 3,
-        "fire": 1
+        "water": 9,
+        "power": 9,
+        "sewage": 9,
+        "health": 9,
+        "edu": 27,
+        "police": 27,
+        "fire": 9
       }
     },
     "border": {
@@ -78,78 +78,78 @@
       "wealth": 0.75,
       "youth": 1.0,
       "facilities": {
-        "water": 1,
-        "power": 1,
+        "water": 9,
+        "power": 9,
         "sewage": 0,
-        "health": 1,
-        "edu": 1,
-        "police": 1,
-        "fire": 1
+        "health": 9,
+        "edu": 9,
+        "police": 9,
+        "fire": 9
       }
     }
   },
   "services": {
     "water": {
       "name": "المياه",
-      "serves_millions": 1.5,
+      "serves_millions": 0.167,
       "monthly_ask": 60,
-      "build_cost": 520,
+      "build_cost": 58,
       "build_months": 6,
-      "adds_monthly": 9,
+      "adds_monthly": 1.0,
       "approval_weight": 0.16
     },
     "power": {
       "name": "الكهربا",
-      "serves_millions": 1.8,
+      "serves_millions": 0.2,
       "monthly_ask": 105,
-      "build_cost": 900,
+      "build_cost": 100,
       "build_months": 11,
-      "adds_monthly": 16,
+      "adds_monthly": 1.77,
       "approval_weight": 0.15
     },
     "sewage": {
       "name": "الصرف",
-      "serves_millions": 2.0,
+      "serves_millions": 0.223,
       "monthly_ask": 45,
-      "build_cost": 610,
+      "build_cost": 68,
       "build_months": 9,
-      "adds_monthly": 8,
+      "adds_monthly": 0.9,
       "approval_weight": 0.11
     },
     "health": {
       "name": "الصحة",
-      "serves_millions": 1.0,
+      "serves_millions": 0.11,
       "monthly_ask": 82,
-      "build_cost": 400,
+      "build_cost": 44,
       "build_months": 8,
-      "adds_monthly": 7,
+      "adds_monthly": 0.77,
       "approval_weight": 0.17
     },
     "edu": {
       "name": "التعليم",
-      "serves_millions": 0.6,
+      "serves_millions": 0.067,
       "monthly_ask": 95,
-      "build_cost": 180,
+      "build_cost": 20,
       "build_months": 4,
-      "adds_monthly": 6,
+      "adds_monthly": 0.67,
       "approval_weight": 0.14
     },
     "police": {
       "name": "الشرطة",
-      "serves_millions": 0.5,
+      "serves_millions": 0.057,
       "monthly_ask": 58,
-      "build_cost": 150,
+      "build_cost": 17,
       "build_months": 3,
-      "adds_monthly": 5,
+      "adds_monthly": 0.57,
       "approval_weight": 0.15
     },
     "fire": {
       "name": "الإسعاف",
-      "serves_millions": 0.5,
+      "serves_millions": 0.057,
       "monthly_ask": 35,
-      "build_cost": 120,
+      "build_cost": 13,
       "build_months": 3,
-      "adds_monthly": 4,
+      "adds_monthly": 0.43,
       "approval_weight": 0.12
     }
   },

@@ -11,6 +11,12 @@ function ar(n) {
 function arDec(n, places) {
   return n.toFixed(places).replace(/\./g, '٫').replace(/\d/g, function (d) { return AR[+d]; });
 }
+/* Capacities are fractions of a million; a bare decimal is hard to read and can
+   reorder badly in an RTL line. Say small numbers in thousands instead. */
+function arPeople(millions) {
+  if (millions < 1) return ar(Math.round(millions * 1000)) + ' ألف نسمة';
+  return arDec(millions, 1) + ' مليون نسمة';
+}
 function el(id) { return document.getElementById(id); }
 
 var S = null;                 // the game state, null while in setup
@@ -113,12 +119,154 @@ function drawSetup() {
   el('setupFoot').innerHTML = setupFoot();
 }
 
+
+/* ------------------------------------------------------------- services */
+/* The governorate filter is the whole point of this screen: the national
+   average hides that somebody is living without a sewer. Picking a province
+   swaps every number below from the average to that province's reality. */
+var govFilter = 'all';
+
+function svcColor(v) { return v >= 65 ? 'var(--good)' : v >= 45 ? 'var(--warn)' : 'var(--bad)'; }
+
+function svcNumbers(id) {
+  var op = operating(S, id);
+  if (govFilter === 'all') {
+    var lvl = nationalLevel(S, id);
+    // Back out the average coverage so the two bars still multiply to the level.
+    return { op: op, cov: op > 0 ? lvl / op * 100 : 0, lvl: lvl, fac: null };
+  }
+  return { op: op, cov: coverage(S, govFilter, id), lvl: S.level[govFilter][id],
+           fac: S.fac[govFilter][id] };
+}
+
+function serviceCostLine(id, n) {
+  var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+  if (n.fac === null) return ar(monthly) + 'م/شهر على مستوى الدولة';
+  return ar(n.fac) + ' منشأة في ' + BALANCE.governorates[govFilter].name;
+}
+
+function servView() {
+  var h = '<div class="gfilter">'
+    + '<button class="gf ' + (govFilter === 'all' ? 'on' : '') + '" data-gf="all">الدولة كلها</button>';
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    var g = GOV_IDS[i];
+    h += '<button class="gf ' + (govFilter === g ? 'on' : '') + '" data-gf="' + g + '">'
+      + BALANCE.governorates[g].name
+      + '<b style="color:' + svcColor(S.govAppr[g]) + '">' + ar(S.govAppr[g]) + '</b></button>';
+  }
+  h += '</div>';
+
+  for (var j = 0; j < SERVICE_IDS.length; j++) {
+    var id = SERVICE_IDS[j], sd = BALANCE.services[id], n = svcNumbers(id);
+    var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+    h += '<div class="svc">'
+      + '<div class="top1"><span class="ico">' + SVC_ICON[id] + '</span>'
+      + '<span class="nm2">' + sd.name
+      + '<span class="cost" id="cost-' + id + '">' + serviceCostLine(id, n) + '</span></span>'
+      + '<span class="lvl" id="lvl-' + id + '" style="color:' + svcColor(n.lvl) + '">' + ar(n.lvl) + '</span></div>'
+      + '<div class="two2">'
+      + '<div><span class="lb2" id="covl-' + id + '">التغطية ' + ar(n.cov) + '٪</span>'
+      + '<div class="bar2"><div class="fl2" id="covb-' + id + '" style="width:' + Math.min(100, n.cov)
+      + '%;background:var(--info)"></div></div></div>'
+      + '<div><span class="lb2" id="opl-' + id + '">التشغيل ' + ar(n.op) + '٪</span>'
+      + '<div class="bar2"><div class="fl2" id="opb-' + id + '" style="width:' + Math.min(100, n.op)
+      + '%;background:var(--gold2)"></div></div></div></div>'
+      + '<div class="ctl">'
+      + '<button class="build" data-build="' + id + '">🏗️ ابني</button>'
+      + '<input type="range" min="0" max="160" step="2" value="' + Math.round(S.pct[id])
+      + '" data-pct="' + id + '">'
+      + '<span class="pctv" id="pctv-' + id + '">' + ar(S.pct[id]) + '٪</span>'
+      + '</div></div>';
+  }
+
+  if (S.projects.length) {
+    h += '<div class="queue"><h4>تحت الإنشاء</h4>';
+    for (var k = 0; k < S.projects.length; k++) {
+      var pr = S.projects[k];
+      h += '<div class="qi"><span>' + BALANCE.services[pr.svc].name + ' — '
+        + BALANCE.governorates[pr.gov].name
+        + '<span class="qsub">لما يفتح: +' + ar(BALANCE.services[pr.svc].adds_monthly)
+        + 'م على المصروف الشهري للأبد</span></span>'
+        + '<span>' + ar(pr.left) + ' شهور</span></div>';
+    }
+    h += '</div>';
+  }
+
+  var need = Math.ceil(100 / (S.competence / 100));
+  h += '<div class="note2">⚠️ تمويل ١٠٠٪ مش معناه تشغيل ١٠٠٪. كفاءة وزرائك '
+    + ar(S.competence) + '، يعني عشان توصل تشغيل كامل لازم تموّل <b>' + ar(need)
+    + '٪</b> — أو تجيب وزرا أكفأ.</div>';
+  return h;
+}
+
+/* Sliders must not rebuild the screen: redrawing mid-drag drops the thumb from
+   under the player's finger. Update only the numbers that moved. */
+function refreshService(id) {
+  var n = svcNumbers(id);
+  var monthly = S.ask[id] * S.pct[id] / 100 * S.priceIndex;
+  el('pctv-' + id).textContent = ar(S.pct[id]) + '٪';
+  el('opl-' + id).textContent = 'التشغيل ' + ar(n.op) + '٪';
+  el('opb-' + id).style.width = Math.min(100, n.op) + '%';
+  el('lvl-' + id).textContent = ar(n.lvl);
+  el('lvl-' + id).style.color = svcColor(n.lvl);
+  el('cost-' + id).textContent = serviceCostLine(id, n);
+}
+
+/* ---- the build sheet -------------------------------------------------- */
+function openBuild(id) {
+  var sd = BALANCE.services[id], cost = projectCost(S, id);
+  var h = '<div class="sheet"><div class="sh"><span class="ic2">' + SVC_ICON[id] + '</span>'
+    + '<span class="nm3">ابني ' + sd.name + '</span>'
+    + '<button class="x" data-close="1">✕</button></div>'
+    + '<p class="lede2">اختار المحافظة. المنشأة الواحدة بتخدم '
+    + arPeople(sd.serves_millions) + '.</p>'
+    + '<div class="calc2">'
+    + '<div class="cr2"><span>تكلفة الإنشاء</span><b>' + ar(cost) + 'م</b></div>'
+    + '<div class="cr2"><span>مدة الإنشاء</span><b>' + ar(sd.build_months) + ' شهور</b></div>'
+    + '<div class="cr2"><span>وبعد ما يفتح</span><b>+' + ar(sd.adds_monthly) + 'م كل شهر للأبد</b></div>'
+    + '<div class="cr2"><span>الخزينة دلوقتي</span><b style="color:'
+    + (S.treasury >= cost ? 'var(--good)' : 'var(--bad)') + '">' + ar(S.treasury) + 'م</b></div>'
+    + '</div>';
+
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    var g = GOV_IDS[i], cov = coverage(S, g, id);
+    var afford = S.treasury >= cost;
+    h += '<button class="pickg" data-buildgov="' + g + '" data-buildsvc="' + id + '"'
+      + (afford ? '' : ' disabled') + '>'
+      + '<div class="r1"><span class="gn">' + BALANCE.governorates[g].name + '</span>'
+      + '<span class="cv" style="color:' + svcColor(cov) + '">تغطية ' + ar(cov) + '٪</span></div>'
+      + '<div class="r2">' + ar(S.fac[g][id]) + ' منشأة · '
+      + arPeople(S.pop[g]) + ' · التغطية هتبقى '
+      + ar(Math.min(100, (S.fac[g][id] + 1) * sd.serves_millions / S.pop[g] * 100)) + '٪</div>'
+      + '</button>';
+  }
+  if (S.treasury < cost) {
+    h += '<div class="warn2">الخزينة مش كفاية — ناقصك ' + ar(cost - S.treasury) + 'م.</div>';
+  }
+  h += '</div>';
+  el('ovl').innerHTML = h;
+  el('ovl').classList.remove('hidden');
+}
+
+function closeSheet() { el('ovl').classList.add('hidden'); el('ovl').innerHTML = ''; }
+
+function toast(msg) {
+  var t = el('toast');
+  t.innerHTML = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function () { t.classList.remove('on'); }, 3200);
+}
+
 /* ------------------------------------------------------------------- game */
 var TABS = [['pres', '🏛️', 'الرئاسة'], ['treas', '💰', 'الخزينة'], ['serv', '🏗️', 'الخدمات'],
             ['govt', '👔', 'الحكومة'], ['pol', '⚖️', 'السياسة']];
 
 /* One line under each tab's title. Not decoration — it tells the player what
    this screen is FOR before they have read a single number on it. */
+var SVC_ICON = { water: '💧', power: '⚡', sewage: '🚰', health: '🏥',
+                 edu: '🎓', police: '👮', fire: '🚒' };
+
 var BAND_SUB = {
   pres: 'مكتبك · وقراراتك',
   treas: 'الدخل والمصروف · وجيبك',
@@ -132,7 +280,6 @@ var BAND_SUB = {
 var SOON = {
   pres: ['🏛️', 'الرئاسة', 'المواقف اللي بتيجي لك، ومكتب الرئاسة والأفعال اللي بتبدأها إنت.', 'البند ١٢'],
   treas: ['💰', 'الخزينة', 'الدخل والمصروف والضرايب وأسعار الخدمات ودعم الغذاء.', 'البند ٨'],
-  serv: ['🏗️', 'الخدمات', 'السبع خدمات، التشغيل والبناء، وفلتر المحافظات الخمسة.', 'البند ٧'],
   govt: ['👔', 'الحكومة', 'رئيس الوزراء والوزرا التمنية، الولاء والكفاءة، والبنك المركزي.', 'البند ١٠'],
   pol: ['⚖️', 'السياسة', 'الأحزاب الأربعة والكتل الاجتماعية الخمسة والصراع بينهم.', 'البند ١٣']
 };
@@ -165,8 +312,10 @@ function drawNav() {
 function drawView() {
   var name = '';
   for (var i = 0; i < TABS.length; i++) if (TABS[i][0] === tab) name = TABS[i][2];
+  var sub = BAND_SUB[tab];
+  if (tab === 'serv' && govFilter !== 'all') sub = BALANCE.governorates[govFilter].name + ' — بس';
   var h = '<div class="band">' + ART[tab]
-    + '<div class="ttl">' + name + '</div><div class="sub">' + BAND_SUB[tab] + '</div></div><div class="pad">';
+    + '<div class="ttl">' + name + '</div><div class="sub">' + sub + '</div></div><div class="pad">';
   if (tab === 'pres') {
     var g = govOf(S), s = socOf(S);
     h += '<div class="card"><h3>' + esc(S.country) + '</h3>'
@@ -197,6 +346,12 @@ function drawView() {
         + '</div>';
     }
   }
+  if (tab === 'serv') {
+    el('view').innerHTML = h + servView() + '</div>';
+    var sel = document.querySelector('.gf.on');
+    if (sel && sel.scrollIntoView) sel.scrollIntoView({ block: 'nearest', inline: 'center' });
+    return;
+  }
   var k = SOON[tab];
   h += '<div class="soon"><span class="ic">' + k[0] + '</span><h3>' + k[1] + '</h3>'
     + '<p>' + k[2] + '</p><span class="item">لسه بيتبني — ' + k[3] + '</span></div>';
@@ -223,6 +378,23 @@ function setRunning(v) { running = v; schedule(); drawClock(); }
    ar() here, so nothing can reach the screen in Latin digits. */
 function eventText(e) {
   if (e.type === 'year') return 'بدأت السنة ' + ar(e.year) + '.';
+  if (e.type === 'built') {
+    return '🏗️ افتتح ' + BALANCE.services[e.svc].name + ' جديد في '
+      + BALANCE.governorates[e.gov].name + ' — والمصروف الشهري زاد '
+      + arDec(BALANCE.services[e.svc].adds_monthly, 1) + 'م للأبد.';
+  }
+  if (e.type === 'deficit') {
+    return '⚠️ الخزينة دخلت عجز. المرتبات مش مدفوعة، والخدمات بتنهار بسرعة مضاعفة.';
+  }
+  if (e.type === 'boiling') {
+    return '🔥 الغليان وصل ' + ar(e.pct) + '٪ — الشارع مش مطمئن.';
+  }
+  if (e.type === 'end') {
+    if (e.reason === 'riot') {
+      return '💥 قام الشغب في ' + BALANCE.governorates[e.gov].name + ' وانتهى حكمك بالعزل.';
+    }
+    return '💥 الاقتصاد انهار من التضخم. انتهى حكمك.';
+  }
   return e.text || '';
 }
 
@@ -231,6 +403,11 @@ function step() {
   events.forEach(function (e) {
     var line = eventText(e);
     if (line) S.log.push(line);
+    // A finished project, a deficit or the end are things the player must not
+    // scroll past — put them in front of whichever screen they are on.
+    if (e.type === 'built' || e.type === 'deficit' || e.type === 'end' || e.type === 'boiling') {
+      toast(line);
+    }
   });
   // Anything the player must see stops the clock. Later this is where a crisis,
   // a scandal or a finished project will pause the game for a decision.
@@ -239,8 +416,13 @@ function step() {
 }
 
 /* ----------------------------------------------------------------- events */
+var CLICKABLE = ['data-pick', 'data-nav', 'data-roll', 'data-tab', 'data-clock',
+                 'data-gf', 'data-build', 'data-close', 'data-buildgov'];
+
 document.addEventListener('click', function (ev) {
-  var t = ev.target.closest('[data-pick],[data-nav],[data-roll],[data-tab],[data-clock]');
+  // Every clickable attribute must be listed here or its button does nothing.
+  // Forgetting one is silent — the button simply never responds.
+  var t = ev.target.closest('[' + CLICKABLE.join('],[') + ']');
   if (!t) return;
   if (t.dataset.pick) {
     var list = t.dataset.pick === 'gov' ? SETUP.government_types : SETUP.society_types;
@@ -259,11 +441,35 @@ drawSetup();
     else startGame();
   } else if (t.dataset.tab) {
     tab = t.dataset.tab; drawNav(); drawView();
+  } else if (t.dataset.gf) {
+    govFilter = t.dataset.gf; drawView();
+  } else if (t.dataset.build) {
+    openBuild(t.dataset.build);
+  } else if (t.dataset.close) {
+    closeSheet();
+  } else if (t.dataset.buildgov) {
+    var err = startProject(S, t.dataset.buildgov, t.dataset.buildsvc);
+    closeSheet();
+    if (err) { toast(err); }
+    else {
+      toast('🏗️ بدأ إنشاء ' + BALANCE.services[t.dataset.buildsvc].name + ' في '
+        + BALANCE.governorates[t.dataset.buildgov].name);
+      drawGame();
+    }
   } else if (t.dataset.clock === 'pp') {
     setRunning(!running);
   } else if (t.dataset.clock) {
     speed = +t.dataset.clock; schedule(); drawClock();
   }
+});
+
+/* Range inputs fire "input" on every pixel of a drag, so this must stay cheap
+   and must not touch the DOM the slider itself lives in. */
+document.addEventListener('input', function (ev) {
+  var id = ev.target && ev.target.dataset && ev.target.dataset.pct;
+  if (!id || !S) return;
+  S.pct[id] = +ev.target.value;
+  refreshService(id);
 });
 
 function captureNames() {

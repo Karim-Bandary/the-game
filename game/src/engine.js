@@ -295,8 +295,12 @@ function tickMonth(S) {
   // 14. the boil, and the two endings
   var md = BALANCE.mood;
   if (S.approval < md.approval_danger && S.stability < md.stability_danger) {
+    var boilBefore = S.boil;
     S.boil += (md.approval_danger - S.approval) * md.boil_gain_coef + md.boil_gain_base;
-    if (S.boil > 0 && S.boil < md.boil_cap) events.push({ type: 'boiling', boil: Math.round(S.boil) });
+    var step = md.boil_cap / 4;
+    if (Math.floor(S.boil / step) > Math.floor(boilBefore / step) && S.boil < md.boil_cap) {
+      events.push({ type: 'boiling', pct: Math.round(S.boil / md.boil_cap * 100) });
+    }
   } else {
     S.boil = Math.max(0, S.boil - md.boil_cooldown);
   }
