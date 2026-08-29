@@ -38,6 +38,38 @@ jobs:
       - name: فحص الفاحص نفسه
         run: python3 tools/test_check.py
 
+  apk:
+    name: بناء التطبيق
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+
+      # The app is the game plus a WebView. This is the only place the two meet.
+      - name: نسخ اللعبة جوّه التطبيق
+        run: cp game/index.html android/app/src/main/assets/index.html
+
+      - name: بناء نسخة التجربة
+        working-directory: android
+        run: gradle assembleDebug --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: the-game-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
   deploy:
     name: النشر
     needs: check
