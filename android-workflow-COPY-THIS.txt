@@ -12,10 +12,6 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
 jobs:
   check:
     name: الفحص
@@ -71,6 +67,11 @@ jobs:
     name: النشر
     needs: check
     runs-on: ubuntu-latest
+    # Only the deploy is worth cancelling when a newer push arrives — two
+    # deployments cannot run at once. The checks and the app build must finish.
+    concurrency:
+      group: pages
+      cancel-in-progress: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

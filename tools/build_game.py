@@ -19,10 +19,16 @@ DATA = ROOT / "data"
 
 balance = json.loads((DATA / "balance.json").read_text(encoding="utf-8"))
 setup = json.loads((DATA / "setup.json").read_text(encoding="utf-8"))
+ministers = json.loads((DATA / "ministers.json").read_text(encoding="utf-8"))
+parliament = json.loads((DATA / "parliament.json").read_text(encoding="utf-8"))
+bank = json.loads((DATA / "bank.json").read_text(encoding="utf-8"))
 
 engine = (SRC / "engine.js").read_text(encoding="utf-8")
 engine = engine.replace("__BALANCE__", json.dumps(balance, ensure_ascii=False))
 engine = engine.replace("__SETUP__", json.dumps(setup, ensure_ascii=False))
+engine = engine.replace("__MINISTERS__", json.dumps(ministers, ensure_ascii=False))
+engine = engine.replace("__PARLIAMENT__", json.dumps(parliament, ensure_ascii=False))
+engine = engine.replace("__BANK__", json.dumps(bank, ensure_ascii=False))
 
 page = (SRC / "index.html").read_text(encoding="utf-8")
 page = page.replace("__STYLE__", (SRC / "style.css").read_text(encoding="utf-8"))
@@ -33,7 +39,8 @@ page = page.replace("__UI__", (SRC / "ui.js").read_text(encoding="utf-8"))
 # A leftover placeholder means a source moved and the bundle is broken in a way
 # that looks fine until someone opens it. Fail loudly here instead.
 leftovers = [m for m in ["__STYLE__", "__ART__", "__ENGINE__", "__UI__",
-                         "__BALANCE__", "__SETUP__"] if m in page]
+                         "__BALANCE__", "__SETUP__", "__MINISTERS__",
+                         "__PARLIAMENT__", "__BANK__"] if m in page]
 if leftovers:
     raise SystemExit(f"البناء فشل: علامات ما اتملتش — {leftovers}")
 

@@ -212,6 +212,39 @@
     "opposition_threshold": 55,
     "opposition_coef": 0.8,
     "inflation_coef": 0.6,
-    "smoothing": 0.22
+    "smoothing": 0.22,
+    "loyalty_floor": 62,
+    "loyalty_coef": 0.55,
+    "_loyalty_note": "متوسط ولاء الوزرا تحت loyalty_floor بينزّل الثبات. من غير ده الولاء رقم على الشاشة مالوش تمن."
+  },
+  "levers": {
+    "_note": "حدود المقابض اللي اللاعب بيحركها في شاشة وزير المالية. القيم الابتدائية في start لازم تقع جوّه المدى ده.",
+    "tax": {
+      "min": 0,
+      "max": 60,
+      "step": 1
+    },
+    "utility": {
+      "min": 0,
+      "max": 150,
+      "step": 5
+    },
+    "subsidy": {
+      "min": 0,
+      "max": 400,
+      "step": 10
+    }
+  },
+  "corruption": {
+    "_note": "السرقة من الخزينة. التمن الحقيقي إن الفلوس بتمشي من الخدمات — والخطر إن وزير مالية ولاؤه واطي بيسرّبك.",
+    "max_share_per_month": 0.08,
+    "hard_cap": 400,
+    "leak_base_pct": 4.0,
+    "leak_loyalty_coef": 0.35,
+    "leak_size_coef": 30.0,
+    "leak_min_pct": 2.0,
+    "leak_max_pct": 85.0,
+    "approval_hit": 6.0,
+    "stability_hit": 3.0
   }
 }

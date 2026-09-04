@@ -32,7 +32,9 @@ eval(engineSrc);
 function fresh(govId, socId) {
   const gov = SETUP.government_types.find(g => g.id === (govId || 'republic'));
   const soc = SETUP.society_types.find(s => s.id === (socId || 'conservative'));
-  return newGame({ country: 'محاكاة', ruler: 'لاعب', gov: gov, soc: soc });
+  // A fixed seed: the simulator must measure the same game every run, or a
+  // balance number that moved and a die that rolled differently look identical.
+  return newGame({ country: 'محاكاة', ruler: 'لاعب', gov: gov, soc: soc, seed: 20260101 });
 }
 
 /* Does nothing at all. Standing still must not be a strategy. */
@@ -61,18 +63,35 @@ function reasonable(S) {
 /* Steals steadily and prints money to cover the hole. Should end up rich and
    short-lived — a real trade, not a punishment. */
 function thief(S) {
-  if (S.treasury > 600) {
-    const take = Math.min(140, S.treasury * 0.05);
-    S.treasury -= take;
-    S.personal += take;
-  }
-  if (S.treasury < 500) {
-    S.treasury += 350 * S.priceIndex;
-    S.inflation += BALANCE.inflation.print_350_adds;
-  }
+  // Steals through the ENGINE's rule, not its own arithmetic. When the simulator
+  // has its own copy of a rule it eventually measures a game nobody is playing —
+  // and the leak risk, which is the whole cost of stealing, would be invisible.
+  if (S.treasury > 600) stealFromTreasury(S, Math.floor(Math.min(140, stealMax(S))));
+  // Prints whatever this governor will sign for, whenever he is allowed to.
+  if (S.treasury < 500) printMoney(S, printCap(S));
 }
 
-const PLAYERS = { 'سلبي': passive, 'معقول': reasonable, 'حرامي': thief };
+/* Plays the cabinet instead of the country: sacks the weakest minister whenever
+   he is allowed to, takes the best of the three on offer, and reshuffles the
+   moment the cooldown lifts. This exists to answer one question — is managing
+   people on its own a winning strategy? If this player outlives the one who
+   actually runs the services, the ministers are overpowered. */
+function shuffler(S) {
+  reasonable(S);                                  // still keeps the lights on
+  if (reshuffleRefusal(S) === null && avgCompetence(S) < 70) { reshuffleCabinet(S); return; }
+  let worst = null;
+  for (const id of POST_IDS) {
+    if (dismissRefusal(S, id) !== null) continue;
+    if (!worst || S.ministers[id].competence < S.ministers[worst].competence) worst = id;
+  }
+  if (!worst) return;
+  const offers = candidatesFor(S, worst);
+  let best = 0;
+  for (let i = 1; i < offers.length; i++) if (offers[i].competence > offers[best].competence) best = i;
+  if (offers[best].competence > S.ministers[worst].competence + 5) dismissMinister(S, worst, best);
+}
+
+const PLAYERS = { 'سلبي': passive, 'معقول': reasonable, 'حرامي': thief, 'مقلّب': shuffler };
 
 /* ----------------------------------------------------------------- runner */
 
@@ -93,7 +112,11 @@ function lifespans(player, runs, months, govId, socId) {
   return lives;
 }
 
-const MONTHS = 300;
+// Long enough that the STRONGEST strategy still dies inside it, and no longer:
+// at 300 the cabinet-managing player hit the ceiling and looked immortal, which
+// hid that he was outliving everyone; at 900 the checker took minutes. He dies
+// around 304, so this leaves room without paying for it on every push.
+const MONTHS = 420;
 const startState = fresh();
 const report = {
   start: {
@@ -135,7 +158,16 @@ for (const g of GOV_IDS) {
     approval: Math.round(startState.govAppr[g])
   };
 }
-report.detail.competence = startState.competence;
+report.detail.competence = startState.competence;          // the cabinet baseline
+report.detail.ministers = {};
+for (const p of MINISTERS.posts) {
+  report.detail.ministers[p.id] = {
+    name: p.name,
+    competence: startState.ministers[p.id].competence,
+    loyalty: startState.ministers[p.id].loyalty,
+    services: p.services.map(s => BALANCE.services[s].name)
+  };
+}
 
 /* The first month's books, so the balance document can quote the real figures
    instead of numbers someone typed in by hand. */

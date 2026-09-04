@@ -95,10 +95,23 @@ input:focus{outline:none;border-color:var(--gold2)}
 .view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .band{position:relative;height:132px;overflow:hidden;background:var(--bg)}
 .band svg{position:absolute;inset:0;width:100%;height:100%;display:block}
-.band .ttl{position:absolute;right:14px;bottom:11px;font-size:17px;font-weight:700;
+/* The band clips whatever leaves it, so both lines have to sit fully inside it.
+   At bottom:-2px the subtitle's descenders were being sliced off — invisible in
+   a diff, obvious the moment you look at the screen. */
+.band .ttl{position:absolute;right:14px;bottom:24px;font-size:17px;font-weight:700;
   letter-spacing:.01em;text-shadow:0 2px 12px rgba(0,0,0,.9)}
-.band .sub{position:absolute;right:14px;bottom:-2px;font-size:10px;color:var(--dim);
+.band .sub{position:absolute;right:14px;bottom:8px;font-size:10px;line-height:1.5;color:var(--dim);
   text-shadow:0 1px 8px rgba(0,0,0,.9)}
+/* Sits on the artwork, so it needs its own dark plate to stay readable over a
+   bright part of the scene. */
+.band .back{position:absolute;top:10px;right:12px;background:rgba(9,12,18,.78);
+  border:1px solid var(--line2);color:var(--ink);font-size:11.5px;font-weight:600;
+  border-radius:20px;padding:6px 12px;display:flex;align-items:center;gap:5px;max-width:70%}
+.band .back b{color:var(--dim);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jump{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:13px;
+  padding:13px;margin-bottom:9px;color:var(--ink);font-size:13.5px;font-weight:600;
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:right}
+.jump span{font-size:11px;color:var(--dim);font-weight:400;line-height:1.7}
 .pad{padding:14px}
 .nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid #1e2431;
   background:var(--panel);flex:none;padding-bottom:env(safe-area-inset-bottom)}
@@ -112,6 +125,57 @@ input:focus{outline:none;border-color:var(--gold2)}
 .soon p{font-size:12px;color:var(--dim);line-height:1.9;max-width:34ch;margin:0 auto}
 .soon .item{display:inline-block;margin-top:12px;font-size:10.5px;color:var(--gold2);
   border:1px solid #4a3f22;border-radius:20px;padding:3px 11px}
+/* ---- cabinet board ---- */
+.mrow{background:var(--panel);border:1px solid var(--line);border-radius:13px;
+  padding:12px 13px;margin-bottom:9px}
+.mhd{display:flex;align-items:center;gap:10px}
+.mhd .mic{font-size:21px;flex:none;width:26px;text-align:center}
+/* min-width:0 is what lets the ellipsis below actually kick in. Without it a
+   long sub-line pushes the number off the edge of the card instead of
+   truncating — the governor's row lost its number that way. */
+.mhd .mnm{flex:1;min-width:0;font-size:13.5px;font-weight:700;line-height:1.35}
+.mhd .mof{display:block;font-size:10.5px;color:var(--dim);font-weight:400;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mhd .mbig{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+.mtag{display:inline-block;margin-top:8px;font-size:10px;border-radius:20px;padding:2px 9px;
+  border:1px solid currentColor}
+.mtag.good{color:var(--good)} .mtag.warn{color:var(--warn)} .mtag.bad{color:var(--bad)}
+.mbars{display:flex;gap:14px;margin-top:9px}
+.mb{flex:1;display:flex;align-items:center;gap:6px}
+.mb span{font-size:10px;color:var(--dim);flex:none}
+.mb b{font-size:11.5px;font-variant-numeric:tabular-nums;flex:none;min-width:2.2em;text-align:left}
+.mbar{flex:1;height:4px;background:#0d1017;border-radius:2px;overflow:hidden}
+.mfl{height:100%;border-radius:2px}
+.mfoot{margin-top:8px;font-size:10.5px;color:var(--dim2);line-height:1.7}
+button.mrow{width:100%;text-align:right;color:var(--ink);position:relative}
+button.mrow .mgo{position:absolute;left:11px;top:50%;transform:translateY(-50%);
+  font-size:19px;color:var(--dim2)}
+button.mrow .mhd{padding-left:16px}
+.danger{width:100%;background:rgba(198,60,60,.09);border:1px solid #5d2a2a;border-radius:13px;
+  padding:13px;margin-top:4px;color:#e8a0a0;font-size:13.5px;font-weight:700;
+  display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:right}
+.danger span{font-size:11px;color:var(--dim);font-weight:400;line-height:1.7}
+.danger:disabled{opacity:.5}
+.dl{font-size:10px} .dl.up{color:var(--good)} .dl.dn{color:var(--bad)} .dl.same{color:var(--dim2)}
+.sech{font-size:12px;color:var(--dim);margin:14px 2px 8px}
+.lev{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:12px 13px;margin-bottom:9px}
+.lvtop{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.lvtop .lvv{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--gold)}
+.lev input[type=range]{width:100%;accent-color:var(--gold2);height:22px}
+.krow.tot{border-top:1px solid var(--line);margin-top:5px;padding-top:8px;color:var(--ink)}
+.seatbar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin:6px 0 4px;
+  background:#0d1017}
+.seatbar span{display:block;height:100%}
+.prow .mbig{flex:none;font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+.prow{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:10px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
+.prow .mic{font-size:18px;flex:none;width:24px;text-align:center}
+.prow .pnm{flex:1;font-size:13px;font-weight:700;line-height:1.35;min-width:0}
+.prow .mof{display:block;font-size:10px;color:var(--dim);font-weight:400;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mini{flex:none;background:rgba(198,60,60,.12);border:1px solid #5d2a2a;border-radius:9px;
+  padding:7px 13px;color:#e8a0a0;font-size:11.5px;font-weight:700}
+.mini:disabled{opacity:.35}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:9px}
 .card h3{font-size:14px;margin-bottom:8px}
 .krow{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#9aa3b6}
@@ -119,21 +183,13 @@ input:focus{outline:none;border-color:var(--gold2)}
 .log{font-size:11.5px;color:var(--dim);line-height:1.9;border-right:2px solid var(--line2);
   padding-right:10px;margin-bottom:7px}
 
-/* ------------------------------------------------------- services screen */
-.gfilter{display:flex;gap:5px;overflow-x:auto;margin-bottom:11px;padding-bottom:3px;
-  scrollbar-width:none}
-.gfilter::-webkit-scrollbar{display:none}
-.gf{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:20px;
-  padding:6px 12px;font-size:11.5px;white-space:nowrap;font-family:inherit;flex:none}
-.gf.on{background:#1e2532;border-color:#3a4457;color:var(--gold)}
-.gf b{font-variant-numeric:tabular-nums;margin-right:5px}
-
+/* --------------------------------------------------------- service cards */
 .svc{background:var(--panel);border:1px solid var(--line);border-radius:13px;
   padding:12px;margin-bottom:8px}
-.svc .top1{display:flex;align-items:center;gap:9px}
+.svc .top1,.lev .lvtop{display:flex;align-items:center;gap:9px}
 .svc .ico{font-size:17px;width:22px;text-align:center;flex:none}
-.svc .nm2{flex:1;font-size:13.5px}
-.svc .cost{font-size:10.5px;color:var(--dim);display:block;margin-top:2px}
+.svc .nm2,.lev .nm2{flex:1;font-size:13.5px}
+.svc .cost,.lev .cost{font-size:10.5px;color:var(--dim);display:block;margin-top:2px;line-height:1.6}
 .svc .lvl{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
 .two2{display:flex;gap:7px;margin-top:8px}
 .two2>div{flex:1}

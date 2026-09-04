@@ -48,8 +48,20 @@ COMBOS = sim_out["combos"]
 
 total_ask = sum(sv[k]["monthly_ask"] for k in SV_ORDER)
 run_bill = total_ask * st["budget_pct"] / 100
-operating = st["budget_pct"] * st["minister_competence"] / 100
-pct_for_full = round(100 / (st["minister_competence"] / 100))
+
+# Operating is per minister now, so the worked example has to name one. The
+# utilities minister is the right one to show: he alone carries 42% of the
+# weight the player's approval is made of.
+MIN = json.load(open(DATA / "ministers.json", encoding="utf-8"))
+POSTS = {p["id"]: p for p in MIN["posts"]}
+OWNER = {s: p["id"] for p in MIN["posts"] for s in p["services"]}
+EX = POSTS["utilities"]
+ex_comp = EX["start"]["competence"]
+operating = st["budget_pct"] * ex_comp / 100
+pct_for_full = round(100 / (ex_comp / 100))
+comps = [p["start"]["competence"] for p in MIN["posts"]]
+comp_lo, comp_hi = min(comps), max(comps)
+comp_avg = round(sum(comps) / len(comps))
 
 h = [STYLE, '<div class="doc">']
 h.append(f'''
@@ -114,15 +126,28 @@ h.append(f'''
       <tr><td class="k">التضخم</td><td class="n">{ar(st["inflation"])}٪</td><td>مقبول — الوجع بيبدأ فوق {ar(B["inflation"]["pain_starts_above"])}٪</td></tr>
       <tr><td class="k">ضريبة الدخل</td><td class="n">{ar(st["tax_rate"])}٪</td><td>الناس ما بتوجعش تحت {ar(B["mood"]["tax_pain_free_below"])}٪</td></tr>
       <tr><td class="k">تمويل الوزارات</td><td class="n">{ar(st["budget_pct"])}٪</td><td>من طلب كل وزارة — الفاتورة {ar(run_bill)}م شهريًا</td></tr>
-      <tr><td class="k">كفاءة الوزرا</td><td class="n">{ar(st["minister_competence"])}</td><td>يعني التشغيل الفعلي {ar(operating)}٪ بس</td></tr>
+      <tr><td class="k">كفاءة الوزرا</td><td class="n">{ar(comp_lo)}–{ar(comp_hi)}</td><td>مش رقم واحد — كل وزير بكفاءته، والمتوسط {ar(comp_avg)}</td></tr>
       <tr><td class="k">رصيدك الشخصي</td><td class="n">٠</td><td>لسه</td></tr>
     </tbody>
   </table></div>
 
   <div class="formula">
-    <div class="eq">{ar(st["budget_pct"])}٪ تمويل × {ar(st["minister_competence"])}٪ كفاءة = {ar(operating)}٪ تشغيل</div>
-    <p class="why">دي أهم حسبة في اللعبة. عشان توصل تشغيل ١٠٠٪ بوزير كفاءته {ar(st["minister_competence"])}٪، لازم تموّل <strong>{ar(pct_for_full)}٪</strong> — وده مستحيل على كل الوزارات في نفس الوقت بالدخل اللي عندك. <strong>الطريق الوحيد لدولة شغالة هو وزرا أكفأ، مش فلوس أكتر.</strong> ودي الرسالة اللي عايزين اللاعب يكتشفها بنفسه بعد سنتين لعب.</p>
+    <div class="eq">{ar(st["budget_pct"])}٪ تمويل × {ar(ex_comp)}٪ كفاءة {EX["name"]} = {ar(operating)}٪ تشغيل</div>
+    <p class="why">دي أهم حسبة في اللعبة، وبتتحسب لكل وزارة بكفاءة وزيرها هو — مش بمتوسط عام. عشان توصل تشغيل ١٠٠٪ في وزارة وزيرها كفاءته {ar(ex_comp)}٪، لازم تموّل <strong>{ar(pct_for_full)}٪</strong> — وده مستحيل على كل الوزارات في نفس الوقت بالدخل اللي عندك. <strong>الطريق الوحيد لدولة شغالة هو وزرا أكفأ، مش فلوس أكتر.</strong> ودي الرسالة اللي عايزين اللاعب يكتشفها بنفسه بعد سنتين لعب.</p>
   </div>
+
+  <h3>الحكومة اللي بتستلمها</h3>
+  <p class="why">كل خدمة عند وزير واحد بالظبط. الفرق بين الوزرا هو السبب الوحيد اللي يخلّي اللاعب يفرّق بين واحد والتاني — وزارة بنفس التمويل بتطلع أحسن أو أوحش على حسب اللي قاعد عليها.</p>
+  <div class="tw"><table>
+    <thead><tr><th>المنصب</th><th>كفاءة</th><th>ولاء</th><th>خدماته</th></tr></thead>
+    <tbody>{"".join(
+      f'<tr><td class="k">{p["icon"]} {p["name"]}</td>'
+      f'<td class="n">{ar(p["start"]["competence"])}</td>'
+      f'<td class="n">{ar(p["start"]["loyalty"])}</td>'
+      f'<td>{"، ".join(sv[s]["name"] for s in p["services"]) or "—  " + p["of"]}</td></tr>'
+      for p in MIN["posts"])}</tbody>
+  </table></div>
+  <p class="why">رئيس الوزراء مالوش خدمات، لكن كفاءته بتضيف لكل وزير غيره: (كفاءته − ٥٠) × {MIN["pm_bonus_coef"]}. ووزير المالية هو اللي بيحدد نسبة تحصيل الضرايب.</p>
 
   <h3>مستوى كل خدمة عند البداية</h3>
   <div class="tw"><table>
