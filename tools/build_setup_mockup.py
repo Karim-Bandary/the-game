@@ -5,9 +5,21 @@ Why generated from data/balance.json: the summary screen shows the ACTUAL starti
 numbers each choice produces. If it invented them, Karim would be reviewing a
 promise instead of the game.
 """
-import json
+import json, os, sys, subprocess
+from pathlib import Path
 
-B = json.load(open("data/balance.json", encoding="utf-8"))
+ROOT = Path(__file__).resolve().parent.parent   # repo root, whatever the cwd is
+DATA = ROOT / "data"
+DOCS = ROOT / "docs"
+
+def wrap_page(title, body):
+    """docs/ pages are standalone: GitHub Pages serves them with no wrapper."""
+    head, rest = body.split("</style>", 1)
+    return ('<!DOCTYPE html>\n<html lang="ar" dir="rtl">\n<head>\n<meta charset="utf-8">\n'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+            + head + "</style>\n</head>\n<body>\n" + rest + "\n</body>\n</html>\n")
+
+B = json.load(open(DATA / "balance.json", encoding="utf-8"))
 st = B["start"]
 
 BASE = {
@@ -23,13 +35,13 @@ GOVS = [
      "mods": {"stability": +12, "ap": -1},
      "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"],
      "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك",
-             "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١٫٥"],
+             "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١.٥"],
      "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."},
 
     {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق",
      "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.",
-     "mods": {"competence": +8},
-     "good": ["كفاءة الوزرا +٨ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)",
+     "mods": {"competence": +4},
+     "good": ["كفاءة الوزرا +٤ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)",
               "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"],
      "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت",
              "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"],
@@ -39,7 +51,7 @@ GOVS = [
      "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش هو الحاجة الوحيدة اللي بتخاف منها.",
      "mods": {"ap": +2, "approval": -10},
      "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪",
-              "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠٫٦ — الإعلام مقفول"],
+              "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠.٦ — الإعلام مقفول"],
      "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار",
              "⚠️ لو رضا الجيش نزل تحت ٣٠ → انقلاب فوري ونهاية تالتة"],
      "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."},
@@ -54,21 +66,21 @@ SOCIETIES = [
 
     {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب",
      "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.",
-     "mods": {"competence": +6},
-     "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٦"],
-     "bad": ["الفضيحة بتنتشر ×١٫٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]},
+     "mods": {"competence": +3},
+     "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٣"],
+     "bad": ["الفضيحة بتنتشر ×١.٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]},
 
     {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة",
      "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.",
-     "mods": {"loyalty": +15, "competence": -12},
+     "mods": {"loyalty": +15, "competence": -6},
      "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الجيش أرخص ٣٠٪", "المحافظات البعيدة أهدى"],
-     "bad": ["كفاءة الوزرا −١٢ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]},
+     "bad": ["كفاءة الوزرا −٦ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]},
 
     {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية",
      "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.",
      "mods": {"approval": -6},
      "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"],
-     "bad": ["كل أزمة بتكبر ×١٫٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]},
+     "bad": ["كل أزمة بتكبر ×١.٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]},
 ]
 
 COUNTRY_NAMES = ["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان",
@@ -264,10 +276,10 @@ out = (HTML.replace("__GOVS__", json.dumps(GOVS, ensure_ascii=False))
            .replace("__BASE__", json.dumps(BASE, ensure_ascii=False))
            .replace("__CN__", json.dumps(COUNTRY_NAMES, ensure_ascii=False))
            .replace("__RN__", json.dumps(RULER_NAMES, ensure_ascii=False)))
-open("setup_mockup.html", "w", encoding="utf-8").write(out)
+(DOCS / "setup-mockup.html").write_text(out, encoding="utf-8")
 
 # the setup modifiers are game data, so they belong in the data folder too
 json.dump({"government_types": GOVS, "society_types": SOCIETIES, "base_start": BASE,
            "suggested_country_names": COUNTRY_NAMES, "suggested_ruler_names": RULER_NAMES},
-          open("data/setup.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
-print("setup_mockup.html + data/setup.json written")
+          open(DATA / "setup.json", "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+print("docs/setup-mockup.html + data/setup.json written")

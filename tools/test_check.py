@@ -39,6 +39,15 @@ TEXT_CASES = [
      lambda s: s.replace("dependsOn 'copyGame'", "// unlinked")),
     ("زرار الرجوع بينده على دالة مش موجودة", "game/src/ui.js",
      lambda s: s.replace("function onAndroidBack()", "function onAndroidBackX()")),
+    # The bug that turned CI red while everything was green here: the fake
+    # browser stopped supplying a global the game uses, and the test only
+    # survived because the Node on this machine happened to have it.
+    ("المتصفح المزيّف ناقصه navigator", "tools/test_game.js",
+     lambda s: s.replace(
+         "global.navigator = { serviceWorker: { register: () => Promise.resolve() } };", "")),
+    ("المتصفح المزيّف ناقصه location", "tools/test_game.js",
+     lambda s: s.replace(
+         "global.location = { protocol: 'file:', href: 'file:///game/index.html' };", "")),
 ]
 
 # These change a game source and rebuild first, so the bundle is valid but the

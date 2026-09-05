@@ -72,6 +72,15 @@ function fireClick(dataset) {
 global.setInterval = () => 1;
 global.clearInterval = () => {};
 
+/* The bundle runs in a browser, so it touches browser globals. Node 21 started
+   shipping its own `navigator`, which meant this test passed here and crashed on
+   CI's Node 20 with "navigator is not defined" — the exact thing this project
+   exists to prevent: something that works only on my side. The fake browser now
+   supplies these itself, so the test does not care which Node it is run on.
+   check.py refuses to build if the bundle starts using one that is not here. */
+global.navigator = { serviceWorker: { register: () => Promise.resolve() } };
+global.location = { protocol: 'file:', href: 'file:///game/index.html' };
+
 const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]);
 eval(scripts.join('\n'));
 

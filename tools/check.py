@@ -546,6 +546,28 @@ def strip_js_comments(src):
     return re.sub(r"(?m)//.*$", " ", src)
 
 
+def check_browser_globals_are_faked(problems):
+    """The game runs in a browser; the test runs it in Node with a hand-built
+    fake browser. Every browser global the screens touch must be in that fake.
+
+    This is not theoretical: `navigator` only became a Node global in version 21,
+    so the test passed on the Node here and died on CI's Node 20 with
+    "navigator is not defined" — green locally, red for Karim, which is the one
+    failure mode this whole checker exists to prevent."""
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    ui = re.sub(r"'(?:[^'\\]|\\.)*'", "''", ui)          # drop string contents
+    test = (TOOLS / "test_game.js").read_text(encoding="utf-8")
+
+    BROWSER = ["navigator", "location", "window", "localStorage", "sessionStorage",
+               "fetch", "alert", "confirm", "screen", "history", "matchMedia"]
+    for g in BROWSER:
+        if not re.search(r"\b" + g + r"\b", ui):
+            continue
+        if not re.search(r"global\." + g + r"\s*=", test):
+            problems.append(f"ui.js بيستخدم «{g}» و tools/test_game.js مش معرّفه — "
+                            f"الاختبار هيعدّي على نسخة نود عندها الحاجة دي ويقع على غيرها")
+
+
 def check_engine_is_repeatable(problems):
     """The engine must roll dice from the game's own seed, never Math.random.
     One Math.random in here and the same game stops giving the same result:
@@ -834,7 +856,8 @@ def check_game_runs(problems):
 CHECKS = [
     check_html_structure, check_anchors, check_tables, check_theme, check_svg,
     check_javascript, check_balance_json, check_setup_json, check_ministers_json, check_treasury, check_parliament, check_bank,
-    check_engine_is_repeatable, check_simulator_has_no_rules,
+    check_browser_globals_are_faked, check_engine_is_repeatable,
+    check_simulator_has_no_rules,
     check_ui_once_only, check_navigation, check_clipped_text,
     check_every_class_is_styled,
     check_generated_files_match, check_android, check_installable, check_progress_bar, check_game_runs, check_simulator,
