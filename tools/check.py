@@ -400,6 +400,151 @@ def check_bank(problems):
         problems.append(f"طبعة واحدة بتزوّد التضخم {one:.1f}٪ — دي مش مقايضة، دي زرار انتحار")
 
 
+def check_situations(problems):
+    """Situations stop the clock, so every one of them is an interruption the
+    player did not ask for. Three things must hold or the feature turns against
+    the game: a condition must name something real (otherwise the card waits for
+    a state that can never happen and is dead content), an effect must name
+    something real (otherwise the player spends AP on a button that does
+    nothing), and the rate must be bounded (otherwise the game nags)."""
+    try:
+        s = json.loads((DATA / "situations.json").read_text(encoding="utf-8"))
+        b = json.loads((DATA / "balance.json").read_text(encoding="utf-8"))
+        m = json.loads((DATA / "ministers.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"situations.json مش بيتقري — {e}")
+        return
+    src = strip_js_comments((ROOT / "game" / "src" / "engine.js").read_text(encoding="utf-8"))
+
+    def names(block):
+        body = src.split("var " + block + " = {", 1)[1].split("\n};", 1)[0]
+        return set(re.findall(r"^\s{2}([a-zA-Z]+):", body, re.M))
+
+    probes, effects = names("PROBES"), names("EFFECTS")
+    services, govs = set(b["services"]), set(b["governorates"])
+    posts = {p["id"] for p in m["posts"]}
+
+    def probe_ok(k):
+        if k in probes:
+            return True
+        p = k.split(".")
+        return ((p[0] == "service" and p[1] in services)
+                or (p[0] == "gov" and p[1] in govs)
+                or (p[0] == "minister" and len(p) == 3 and p[1] in posts
+                    and p[2] in ("loyalty", "competence")))
+
+    def effect_ok(k):
+        if k in effects:
+            return True
+        p = k.split(".")
+        return ((p[0] == "pct" and p[1] in services)
+                or (p[0] == "build" and len(p) == 3 and p[1] in services and p[2] in govs)
+                or (p[0] == "minister" and len(p) == 3 and p[1] in posts
+                    and p[2] in ("loyalty", "competence")))
+
+    ids = [x["id"] for x in s["situations"]]
+    if len(ids) != len(set(ids)):
+        problems.append("فيه موقفين بنفس الـ id")
+
+    for sit in s["situations"]:
+        for c in sit.get("when", []):
+            if not probe_ok(c[0]):
+                problems.append(f"موقف «{sit['id']}» شرطه على «{c[0]}» وهي مش موجودة — "
+                                f"الموقف ده مش هيظهر أبدًا")
+            if c[1] not in ("<", ">", "<=", ">=", "=="):
+                problems.append(f"موقف «{sit['id']}»: مقارنة مش معروفة «{c[1]}»")
+        if len(sit.get("choices", [])) < 2:
+            problems.append(f"موقف «{sit['id']}» فيه اختيار واحد — ده مش قرار")
+        for ch in sit.get("choices", []):
+            for k in ch.get("effects", {}):
+                if not effect_ok(k):
+                    problems.append(f"موقف «{sit['id']}» اختيار «{ch['nm']}» بيغيّر «{k}» "
+                                    f"وهي مش موجودة — الزرار ده مش هيعمل حاجة")
+            for k in ch.get("cost", {}):
+                if k not in ("ap", "treasury", "personal"):
+                    problems.append(f"موقف «{sit['id']}»: تمن مش معروف «{k}»")
+            paid = sum(abs(v) for v in ch.get("cost", {}).values())
+            if not ch.get("effects") and paid:
+                problems.append(f"موقف «{sit['id']}» اختيار «{ch['nm']}» بيدفع من غير ما يعمل حاجة")
+        free = [ch for ch in sit.get("choices", []) if not ch.get("cost")]
+        if not free:
+            problems.append(f"موقف «{sit['id']}» كل اختياراته ليها تمن — لاعب مفلس "
+                            f"مش هيقدر يجاوب، والوقت واقف لحد ما يجاوب: اللعبة هتتقفل")
+        if sit.get("weight", 0) <= 0:
+            problems.append(f"موقف «{sit['id']}» وزنه صفر — مش هيتختار أبدًا")
+        if sit.get("cooldown_months", 0) < 1:
+            problems.append(f"موقف «{sit['id']}» ممكن يتكرر شهر ورا شهر")
+
+    # ---- scandals ---------------------------------------------------------
+    # A scandal is an ordinary situation with kind:"scandal". Everything above
+    # applies to it unchanged; these are the extra promises the heat system
+    # makes, and every one of them is a way the feature turns into nonsense.
+    heat = b["heat"]
+    scandals = [x for x in s["situations"] if x.get("kind") == "scandal"]
+    if not scandals:
+        problems.append("مفيش ولا فضيحة — نظام الشبهة بيعلى ومحصلش حاجة")
+    over = [x for x in scandals if any(c[0] == "heat" for c in x.get("when", []))]
+    for sit in scandals:
+        if sit not in over:
+            problems.append(f"فضيحة «{sit['id']}» شرطها مش على الشبهة — "
+                            f"هتحصل لرئيس نضيف من غير سبب يشوفه")
+        # The heat line the player watches is scandal_at. A scandal that can
+        # only fire above the cap can never fire at all.
+        for c in sit.get("when", []):
+            if c[0] == "heat" and c[2] >= heat["cap"]:
+                problems.append(f"فضيحة «{sit['id']}» عايزة شبهة {c[2]} والسقف "
+                                f"{heat['cap']} — مش هتحصل أبدًا")
+    # At least one scandal must be reachable at the line the game advertises,
+    # or scandal_at is a number that means nothing.
+    lines = [c[2] for x in scandals for c in x.get("when", []) if c[0] == "heat"]
+    if lines and min(lines) > heat["scandal_at"]:
+        problems.append(f"أقل فضيحة عايزة شبهة {min(lines)} والخط المعلن "
+                        f"{heat['scandal_at']} — الخط بيكدب على اللاعب")
+    # Both kinds of president must have content. A set of scandals that all
+    # require theft leaves a failing-but-honest government with a suspicion
+    # meter and nothing at the end of it; a set where none does means an honest
+    # president gets accused of taking money he never took.
+    theft = [x for x in scandals
+             if any(c[0] == "stolenTotal" for c in x.get("when", []))]
+    if scandals and not theft:
+        problems.append("مفيش ولا فضيحة شرطها إن اللاعب سرق فعلاً — "
+                        "يعني ممكن يتفتح ملف فلوس على رئيس ما خدش مليم")
+    if scandals and len(theft) == len(scandals):
+        problems.append("كل الفضايح عايزة سرقة — يعني رئيس نضيف حكومته بتنهار "
+                        "الشبهة بتعلى عنده ومفيش حاجة بتحصل")
+    for sit in s["situations"]:
+        if sit.get("kind") not in (None, "situation", "scandal"):
+            problems.append(f"موقف «{sit['id']}» نوعه «{sit['kind']}» مش معروف")
+
+    sr = s.get("scandal_rate")
+    if not sr:
+        problems.append("مفيش بوابة معدّل للفضايح — الفضيحة هتحصل كل شهر")
+        return
+    # The two gates are independent, so the worst year is their sum. The player
+    # asked for situations to stop the clock; five interruptions a year is
+    # already one every ten weeks, and past that the game is nagging him.
+    worst = s["rate"]["max_per_year"] + sr["max_per_year"]
+    if worst > 5:
+        problems.append(f"أسوأ سنة فيها {worst} مقاطعة (مواقف + فضايح) — ده كتير، "
+                        f"وكل واحدة بتوقف الوقت")
+    if sr["min_gap_months"] < s["rate"]["min_gap_months"]:
+        problems.append("الفضايح بتيجي ورا بعض أسرع من المواقف العادية — "
+                        "الرئيس اللي في ورطة هيتحاصر")
+    if not (0 < sr["chance_per_month"] <= 1):
+        problems.append(f"احتمال الفضيحة الشهري {sr['chance_per_month']} غلط")
+
+    r = s["rate"]
+    if r["min_gap_months"] < 2:
+        problems.append("المواقف ممكن تيجي ورا بعض — واللاعب اختار إن كل موقف يوقف الوقت، "
+                        "يعني اللعبة هتبقى مقاطعة مستمرة")
+    if not (0 < r["chance_per_month"] <= 1):
+        problems.append(f"احتمال الموقف الشهري {r['chance_per_month']} غلط")
+    if r["max_per_year"] > 6:
+        problems.append(f"{r['max_per_year']} موقف في السنة كتير — كل واحد بيوقف الوقت")
+    if r["max_per_year"] < 1:
+        problems.append("مفيش مواقف في السنة خالص — النظام كله ميت")
+
+
 def check_ministers_json(problems):
     """Control runs through the ministers now, so the map from post to service is
     load-bearing. A service with no minister runs on an undefined competence and
@@ -563,7 +708,11 @@ def check_browser_globals_are_faked(problems):
     for g in BROWSER:
         if not re.search(r"\b" + g + r"\b", ui):
             continue
-        if not re.search(r"global\." + g + r"\s*=", test):
+        # Either as its own global, or hung off the fake window — which is how
+        # the page reaches localStorage, so the fake has to be allowed to put it
+        # in the same place.
+        if (not re.search(r"global\." + g + r"\s*=", test)
+                and not re.search(r"^\s*" + g + r"\s*:", test, re.M)):
             problems.append(f"ui.js بيستخدم «{g}» و tools/test_game.js مش معرّفه — "
                             f"الاختبار هيعدّي على نسخة نود عندها الحاجة دي ويقع على غيرها")
 
@@ -589,7 +738,6 @@ def check_ui_once_only(problems):
     the game still runs, it just does the work again on every click."""
     src = (ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8")
     once = {
-        "navigator.serviceWorker.register": "تسجيل عامل الخدمة",
         "el('artdefs').innerHTML": "تركيب تعريفات الرسومات",
         "function drawView()": "دالة رسم الشاشة",
         "document.addEventListener('click'": "مستقبل الضغطات",
@@ -598,6 +746,43 @@ def check_ui_once_only(problems):
         n = src.count(needle)
         if n != 1:
             problems.append(f"ui.js: «{name}» مكرر {n} مرة والمفروض مرة واحدة بس")
+
+
+def check_no_duplicated_block(problems):
+    """A whole block of code pasted in twice. It has happened twice already —
+    a scripted edit put the service-worker block in three times, and a retried
+    edit added the defence minister's explanation to the same function twice —
+    and neither one breaks anything visibly: the game runs, it just does the
+    work again, or silently uses the first of two branches and leaves the second
+    unreachable.
+
+    check_ui_once_only watches three specific lines by name, which only ever
+    catches the duplications we already know about. This is the general form:
+    no run of six or more identical non-trivial lines may appear twice in the
+    same file. Six is high enough that a repeated `}` or a shared two-line
+    pattern does not trip it."""
+    RUN = 6
+    for rel in ("game/src/ui.js", "game/src/engine.js"):
+        src = strip_js_comments((ROOT / rel).read_text(encoding="utf-8"))
+        lines = [ln.rstrip() for ln in src.splitlines()]
+        # Trivial lines (a lone brace, a blank) are not evidence of anything.
+        def solid(i):
+            return len(lines[i].strip()) > 4
+        seen, reported = {}, set()
+        for i in range(len(lines) - RUN + 1):
+            window = lines[i:i + RUN]
+            if sum(1 for j in range(i, i + RUN) if solid(j)) < RUN:
+                continue
+            key = "\n".join(window)
+            if key in seen and key not in reported:
+                reported.add(key)
+                problems.append(
+                    f"{rel}: نفس الـ{RUN} سطور مكرّرة (السطر {seen[key] + 1} "
+                    f"والسطر {i + 1}) — «{window[0].strip()[:60]}». نسخة تانية من "
+                    f"نفس الكود مش بتكسر حاجة، هي بس بتشتغل مرتين أو بتسيب النسخة "
+                    f"التانية ميتة، ومفيش حاجة بتشتكي")
+            elif key not in seen:
+                seen[key] = i
 
 
 def check_every_class_is_styled(problems):
@@ -620,13 +805,108 @@ def check_every_class_is_styled(problems):
         problems.append(f"style.css: الكلاس «{c}» مستخدم في الشاشات ومالوش أي تنسيق")
 
 
+def check_meters_fit_their_grid(problems):
+    """The top bar is a fixed grid. Adding a meter without widening the grid
+    wraps the last one onto a second row, which on a phone reads as a rendering
+    bug — and nothing in the code is wrong, so nothing fails. The count is read
+    from the two files that have to agree instead of being written down."""
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    css = (ROOT / "game" / "src" / "style.css").read_text(encoding="utf-8")
+    block = ui.split("function drawTop()", 1)
+    if len(block) < 2:
+        problems.append("ui.js: مفيش دالة drawTop")
+        return
+    arr = block[1].split("var m = [", 1)
+    if len(arr) < 2:
+        problems.append("ui.js: مش لاقي قايمة المؤشرات في drawTop")
+        return
+    meters = len(re.findall(r"^\s{4}\['", arr[1].split("\n  ];", 1)[0], re.M))
+    m = re.search(r"\.meters\{[^}]*repeat\((\d+),\s*1fr\)", css)
+    if not m:
+        problems.append("style.css: شبكة الشريط العلوي مش مكتوبة بـ repeat(N,1fr)")
+        return
+    cols = int(m.group(1))
+    if meters != cols:
+        problems.append(f"الشريط العلوي فيه {meters} مؤشر والشبكة {cols} خانة — "
+                        f"الأخير هينزل سطر تاني على الموبايل")
+
+
+def strip_css_comments(css):
+    """Selectors are read by taking whatever sits between } and {, so a comment
+    written above a rule becomes part of that rule's "selector" and the rule
+    stops being recognised. Three CSS checks were reading the file that way and
+    silently skipping every rule that had an explanation above it — which is to
+    say, exactly the rules somebody thought were worth explaining."""
+    return re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+
+
+def check_no_class_defined_twice(problems):
+    """One bare class, one block. Reusing a class name for a second, unrelated
+    thing on a different screen already happened: the situation card's choice
+    buttons were called .opt, the setup screen's government cards were also
+    .opt, and the later block silently restyled a screen nobody was looking at.
+    Nothing errors, nothing logs, and it only shows up on a phone.
+
+    Compound selectors (.opt.sel, .opt .hd) are how a class is meant to be
+    extended, so they do not count — only a second plain `.x { }`."""
+    css = strip_css_comments((ROOT / "game" / "src" / "style.css").read_text(encoding="utf-8"))
+    seen = {}
+    for sel, _ in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        for one in sel.split(","):
+            one = one.strip()
+            if re.fullmatch(r"\.[A-Za-z][\w-]*", one):
+                seen[one] = seen.get(one, 0) + 1
+    for name, n in sorted(seen.items()):
+        if n > 1:
+            problems.append(f"style.css: الكلاس «{name}» متعرّف {n} مرة كقاعدة لوحدها — "
+                            f"يعني شاشتين مختلفين بيستخدموا نفس الاسم، والتانية بتغيّر "
+                            f"شكل الأولى من غير ما حد ياخد باله")
+
+
+def check_modifier_is_not_a_block(problems):
+    """A rule written as `.mtr.danger { }` means "danger modifies a meter". If a
+    bare `.danger { }` also exists and gives something a box — width, border,
+    background, padding — then every meter that goes into the red also gets
+    drawn as that box.
+
+    That exact thing shipped: `.danger` is the big red action button, the meters
+    reused the name for their alarm state, and a country in trouble rendered its
+    top bar as a button-shaped red rectangle. Nothing in the markup is wrong and
+    no test fails; it is only visible on a screen, in a state neither of us
+    normally looks at.
+
+    Colour-only and display:none utilities are not flagged — extending those on
+    purpose is how CSS is meant to work, and a check that cries wolf gets
+    ignored instead of obeyed."""
+    css = strip_css_comments((ROOT / "game" / "src" / "style.css").read_text(encoding="utf-8"))
+    rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
+    boxy = re.compile(r"\b(background|border|padding|margin|width|height|box-shadow|position)\b")
+    bare = {}
+    compound = []
+    for sel, body in rules:
+        for one in sel.split(","):
+            one = " ".join(one.split())
+            if re.fullmatch(r"\.[A-Za-z][\w-]*", one):
+                bare[one[1:]] = bare.get(one[1:], "") + body
+            m = re.fullmatch(r"\.([A-Za-z][\w-]*)\.([A-Za-z][\w-]*)", one)
+            if m:
+                compound.append((m.group(1), m.group(2)))
+    for base, mod in compound:
+        body = bare.get(mod)
+        if body and boxy.search(body):
+            problems.append(
+                f"style.css: «{mod}» مستخدم كحالة على «{base}» (‏.{base}.{mod}) وكمان ليه "
+                f"قاعدة لوحده بتديله شكل صندوق — يعني أي «{base}» بيدخل الحالة دي "
+                f"هيترسم بشكل الحاجة التانية خالص")
+
+
 def check_clipped_text(problems):
     """A line placed at bottom:-2px inside an overflow:hidden box has its lower
     half sliced off. It shipped that way for weeks: nothing in the HTML is
     wrong, no test fails, and it only shows up if somebody looks at the screen.
     So the rule is mechanical instead — nothing inside a clipping box may be
     positioned outside it."""
-    css = (ROOT / "game" / "src" / "style.css").read_text(encoding="utf-8")
+    css = strip_css_comments((ROOT / "game" / "src" / "style.css").read_text(encoding="utf-8"))
     rules = re.findall(r"([^{}]+)\{([^{}]*)\}", css)
     clippers = [sel.strip() for sel, body in rules
                 if re.search(r"overflow\s*:\s*hidden", body)
@@ -640,6 +920,476 @@ def check_clipped_text(problems):
                 problems.append(
                     f"style.css: «{sel}» متحطّط {m.group(1)}:{m.group(2)}px جوّه «{c}» "
                     f"اللي بيقص اللي برّه — الكلام هيتقص من غير ما حد ياخد باله")
+
+
+def check_crackdown(problems):
+    """Repression is a button the player presses in a bad month, so the one way
+    it can be wrong is by not being a decision at all: if the worst outcome of
+    pressing it is "nothing happened", there is no reason ever not to press it,
+    and the screen becomes a chore instead of a choice. Everything below is a
+    way that happens without anything looking broken."""
+    try:
+        c = json.loads((DATA / "crackdown.json").read_text(encoding="utf-8"))
+        setup = json.loads((DATA / "setup.json").read_text(encoding="utf-8"))
+        b = json.loads((DATA / "balance.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"crackdown.json مش بيتقري — {e}")
+        return
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+
+    win, fail = c["win"], c["fail"]
+    # The failure has to hurt more than standing still, in the direction that
+    # matters: the boil is what kills you.
+    if fail["boil"] <= 0:
+        problems.append("القمع الفاشل مش بيزوّد الغليان — يبقى أسوأ حاجة ممكن تحصل "
+                        "هي «مفيش فايدة»، ومفيش سبب واحد إن اللاعب ما يدوسش الزرار كل مرة")
+    if fail["approval"] >= win["approval"]:
+        problems.append("القمع الفاشل تمنه على الرضا زي الناجح أو أقل — الفشل مالوش معنى")
+    if win["boil"] >= 0:
+        problems.append("القمع الناجح مش بينزّل الغليان — الزرار ده مالوش لازمة")
+    # And the success has to cost something, or it is a free reset button.
+    if win["approval"] >= 0 and win["heat"] <= 0:
+        problems.append("القمع الناجح ببلاش — يبقى زرار بيصفّر الغليان من غير تمن")
+
+    if c["boil_floor"] <= 0:
+        problems.append("ينفع تقمع شارع هادي — يبقى القمع صيانة دورية مش قرار في أزمة")
+    if c["boil_floor"] >= b["mood"]["boil_cap"]:
+        problems.append(f"القمع مش مسموح غير عند غليان {c['boil_floor']} والانفجار عند "
+                        f"{b['mood']['boil_cap']} — الزرار هيفتح بعد ما الأوان يفوت")
+    if c["cost"]["once_per_months"] < 1:
+        problems.append("ينفع تقمع كل شهر — الشارع هيبقى ماكينة بتتصفّر بزرار")
+
+    # The setup screen sells the dictatorship partly on this. Same rule as the
+    # army: a promise on that screen has to be a number in the data.
+    by_gov = c.get("success_by_government", {})
+    for g in setup["government_types"]:
+        if g["id"] not in by_gov:
+            problems.append(f"نظام الحكم «{g['nm']}» مالوش رقم في نجاح القمع — "
+                            f"وشاشة البداية بتقارن الأنظمة بالحاجة دي")
+    if by_gov and len(set(by_gov.values())) == 1:
+        problems.append("كل أنظمة الحكم القمع بينجح عندهم بنفس النسبة — "
+                        "يبقى اختيار النظام مالوش أثر على القمع")
+    if by_gov.get("dictator") is not None and by_gov["dictator"] <= max(
+            v for k, v in by_gov.items() if k != "dictator"):
+        problems.append("القمع مش بينجح عند الديكتاتوري أكتر من غيره — "
+                        "وشاشة البداية بتوعده بالعكس")
+
+    s = c["success"]
+    if not (0 < s["min_pct"] < s["max_pct"] <= 100):
+        problems.append("مدى نجاح القمع غلط")
+    if s["min_pct"] >= 50:
+        problems.append(f"أقل احتمال نجاح للقمع {s['min_pct']}٪ — يعني حتى أسوأ وزير "
+                        f"داخلية القمع عنده مضمون تقريبًا، والمنصب مالوش لازمة")
+
+    if "crackdownChance" not in ui:
+        problems.append("ui.js: احتمال نجاح القمع مش مكتوب على الشاشة — "
+                        "قرار بتمن مستخبي")
+    if "'data-crack'" not in ui.split("var CLICKABLE = [")[-1].split("]")[0]:
+        problems.append("ui.js: زرار القمع مش مسجّل في قايمة الضغطات — هيبان وميعملش حاجة")
+    # Both outcomes must be on the card before the tap, not just the good one.
+    panel = ui.split("function streetPanel()")[-1].split("\n}")[0]
+    if "fail" not in panel:
+        problems.append("ui.js: كارت القمع مش بيقول بيحصل إيه لو فشل — "
+                        "زرار بيعلن نتيجته الحلوة بس")
+
+
+def check_army(problems):
+    """The army is the one system that can end a game outright, and it is the
+    one the player asked to have NO meter of its own — the defence minister's
+    loyalty is the army. That makes three things load-bearing, and all three are
+    invisible if they break: the risk must be escapable, the bribe must be
+    priced before it is pressed, and the whole thing must be reachable on a
+    screen."""
+    try:
+        a = json.loads((DATA / "army.json").read_text(encoding="utf-8"))
+        m = json.loads((DATA / "ministers.json").read_text(encoding="utf-8"))
+        setup = json.loads((DATA / "setup.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"army.json مش بيتقري — {e}")
+        return
+    src = strip_js_comments((ROOT / "game" / "src" / "engine.js").read_text(encoding="utf-8"))
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+
+    if not any(p["id"] == "defence" for p in m["posts"]):
+        problems.append("مفيش وزير دفاع — والجيش كله مبني على ولاؤه")
+        return
+
+    # One capped adder for the risk, exactly like the suspicion meter. A bare
+    # `S.coupRisk +=` outside the month is how a capped number stops being
+    # capped, and here that means an ending that fires at the wrong time.
+    bumps = re.findall(r"S\.coupRisk\s*\+=", src)
+    if bumps:
+        problems.append("engine.js: فيه سطر بيزوّد خطر الانقلاب من غير سقف")
+
+    if a["risk_decay_above"] <= 0:
+        problems.append("خطر الانقلاب مبينزلش أبدًا — يعني أول ما ولاء وزير الدفاع "
+                        "ينزل مرة واحدة، اللعبة خلصت مهما اللاعب عمل إيه")
+    if not (0 < a["loyalty_line"] < 100):
+        problems.append(f"خط الجيش {a['loyalty_line']} برّه المدى ٠..١٠٠")
+
+    # The line differs by government, and the setup screen sells the
+    # dictatorship on exactly that. A government with no entry would quietly
+    # fall back to the default and the screen would be promising a danger the
+    # engine does not apply.
+    by_gov = a.get("line_by_government", {})
+    for g in setup["government_types"]:
+        if g["id"] not in by_gov:
+            problems.append(f"نظام الحكم «{g['nm']}» مالوش خط جيش في army.json — "
+                            f"هياخد الخط العام، وشاشة البداية بتبيع خطر مختلف")
+        elif not (0 < by_gov[g["id"]] < 100):
+            problems.append(f"خط جيش «{g['nm']}» ({by_gov[g['id']]}) برّه المدى ٠..١٠٠")
+    if by_gov and len(set(by_gov.values())) == 1:
+        problems.append("كل أنظمة الحكم ليها نفس خط الجيش — يبقى اختيار النظام "
+                        "مالوش أي أثر على الجيش، وشاشة البداية بتقول العكس")
+    # The dictator's legitimacy comes FROM the army, so his line has to be the
+    # strictest, or the screen that says the army is the one thing he fears is
+    # simply wrong.
+    if by_gov.get("dictator") is not None and by_gov["dictator"] <= max(
+            v for k, v in by_gov.items() if k != "dictator"):
+        problems.append("خط الجيش عند الديكتاتوري مش أعلى واحد — وشاشة البداية "
+                        "بتقول إن الجيش هو الحاجة الوحيدة اللي بيخاف منها")
+
+    # And every screen must read the line through the same function, or two
+    # screens will quote two different numbers for the same rule.
+    if "ARMY.loyalty_line" in ui:
+        problems.append("ui.js: فيه شاشة بتقرا الخط العام مش خط نظام الحكم — "
+                        "هتكتب رقم غير اللي المحرك بيحسب بيه")
+
+    # The bribe must be able to lift a minister who is under the line back over
+    # it inside the cooldown, or it is a button that cannot save anybody.
+    b = a["bribe"]
+    if b["loyalty_gain"] <= 0:
+        problems.append("الرشوة مش بترفع ولاء حد — الزرار ده مالوش لازمة")
+    if b["once_per_months"] < 1:
+        problems.append("ينفع تدفع للجيش كل شهر — يبقى الجيش مجرد اشتراك شهري")
+    # And it must cost something that is not free to get. Personal money is the
+    # whole point: it is the money you had to steal for.
+    if not b.get("cost"):
+        problems.append("الرشوة ببلاش — والدايرة اللي اللعبة مبنية عليها (تسرق عشان "
+                        "تدفع للجيش) مش هتقفل")
+    if b["lost_loyalty_gain"] >= b["loyalty_gain"]:
+        problems.append("لما الوزير ياخد الرشوة ويسرقها اللاعب بياخد نفس النتيجة — "
+                        "يعني احتمال الضياع اللي مكتوب على الزرار مالوش أي معنى")
+    if b["lost_max_pct"] >= 100:
+        problems.append("ممكن الرشوة تضيع بنسبة ١٠٠٪ — يبقى فيه حالة اللاعب مالهوش "
+                        "أي طريقة يرجّع بيها الجيش")
+
+    # Reachable, and priced before the tap — the same rule the treasury screen
+    # follows for the leak chance.
+    if "bribeArmy" not in ui:
+        problems.append("ui.js: مفيش زرار للرشوة — الجيش بيخسر واللاعب مالوش أي رد")
+    if "bribeLostChance" not in ui:
+        problems.append("ui.js: احتمال ضياع الرشوة مش مكتوب على الزرار — "
+                        "خطر مستخبي، وده بالظبط اللي بنتجنّبه في اللعبة كلها")
+    if "'data-bribe'" not in ui.split("var CLICKABLE = [")[-1].split("]")[0]:
+        problems.append("ui.js: زرار الرشوة مش مسجّل في قايمة الضغطات — هيبان وميعملش حاجة")
+    if "S.coupRisk" not in ui:
+        problems.append("ui.js: خطر الانقلاب مش ظاهر في أي شاشة — نهاية من رقم "
+                        "اللاعب ما شافوش")
+
+    # The setup screen sells the dictatorship on this exact number. If it names
+    # a mechanic the engine does not have, the player is choosing a government
+    # on a promise that will not be kept.
+    # Both copies of that screen: the generated data AND the game's own summary
+    # step, which is a separate block of text in ui.js. Checking only the data
+    # let the game keep quoting a retired rule for a whole item.
+    blob = json.dumps(setup, ensure_ascii=False)
+    for where, text in (("setup.json", blob), ("ui.js", ui)):
+        if "رضا الجيش" in text:
+            problems.append(f"{where}: لسه بيتكلم عن «رضا الجيش» وهو مش موجود في "
+                            f"اللعبة — الجيش بقى ولاء وزير الدفاع")
+    # And the line itself must be quoted from the data wherever it is shown, not
+    # typed out, or it goes stale the next time it moves.
+    for m in re.finditer(r"وزير الدفاع تحت (\d+)", ui + blob):
+        problems.append(f"فيه نص مكتوب فيه خط الجيش بالإيد ({m.group(1)}) — "
+                        f"لازم يتقري من army.json وإلا هيقدم لوحده")
+
+
+def check_minister_notes_match_the_rules(problems):
+    """Each post carries a one-line note saying what he is for, and the game
+    prints it under his name. The media minister's said his LOYALTY slowed
+    scandals down while the engine was reading his COMPETENCE — two lines on the
+    same screen contradicting each other, and the player has no way to know
+    which one to believe.
+
+    So: a note that names a stat must name the stat the engine actually reads
+    for that post. Which stat that is comes from the engine, not from a list
+    here, so wiring a post up differently later moves this check with it."""
+    try:
+        m = json.loads((DATA / "ministers.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"ministers.json مش بيتقري — {e}")
+        return
+    src = strip_js_comments((ROOT / "game" / "src" / "engine.js").read_text(encoding="utf-8"))
+    for post in m["posts"]:
+        pid, note = post["id"], post.get("note", "")
+        # A post that owns services is read through ministerComp() by the
+        # generic funding rule, so competence always counts for those.
+        reads_comp = bool(post["services"]) or bool(
+            re.search(r"ministerComp\(\s*S\s*,\s*'" + pid + r"'\s*\)", src)
+            or re.search(r"ministers\." + pid + r"\.competence", src)
+            or re.search(r"ministers\['" + pid + r"'\]\.competence", src))
+        if "كفاء" in note and not reads_comp:
+            problems.append(f"«{post['name']}»: الوصف بيقول كفاءته بتعمل حاجة، "
+                            f"والمحرك مش بيقرا كفاءته أصلاً")
+
+    # And the other direction: a post the engine treats specially must have a
+    # line on his own screen explaining it. Loyalty is deliberately NOT checked
+    # the same way — every minister's loyalty feeds the suspicion meter now, so
+    # "his loyalty matters" is true of all nine and the check would prove
+    # nothing.
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    effect = ui.split("function ministerEffect(", 1)
+    if len(effect) < 2:
+        problems.append("ui.js: مفيش دالة بتشرح تأثير الوزير")
+        return
+    effect = effect[1].split("\n}", 1)[0]
+    for post in m["posts"]:
+        pid = post["id"]
+        special = bool(re.search(r"'" + pid + r"'", src)) and not post["services"]
+        if special and ("'" + pid + "'") not in effect:
+            problems.append(f"«{post['name']}» ليه قاعدة خاصة في المحرك ومفيش سطر "
+                            f"على شاشته بيشرحها — اللاعب هيقرا «تأثيره لسه ما اتوصّلش»")
+
+
+def check_heat(problems):
+    """Suspicion is the one number in the game that the player cannot see the
+    cause of by looking at a screen — it is a running total. So the rules are
+    about keeping it honest: it must be able to go down as well as up (a number
+    that only rises is a countdown, not a choice), the media minister must
+    actually be able to hold a normal cabinet, and every source must go through
+    the one capped adder."""
+    try:
+        b = json.loads((DATA / "balance.json").read_text(encoding="utf-8"))
+        m = json.loads((DATA / "ministers.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"balance.json مش بيتقري — {e}")
+        return
+    h = b.get("heat")
+    if not h:
+        problems.append("مفيش قسم heat في balance.json")
+        return
+    src = strip_js_comments((ROOT / "game" / "src" / "engine.js").read_text(encoding="utf-8"))
+
+    # One capped adder. A bare `S.heat +=` anywhere else is how a capped number
+    # quietly stops being capped, and nothing looks wrong until a scandal fires
+    # at a suspicion of 400.
+    for mm in re.finditer(r"S\.heat\s*(\+=|-=)", src):
+        problems.append("engine.js: فيه سطر بيزوّد الشبهة من غير ما يعدي على addHeat — "
+                        "السقف بيتلغي من غير ما حد ياخد باله")
+    if "function addHeat(" not in src:
+        problems.append("engine.js: مفيش addHeat — الشبهة مش هيبقى ليها سقف")
+
+    if h["monthly_decay"] <= 0:
+        problems.append("الشبهة مبتنزلش لوحدها — يبقى الرقم عدّاد للموت مش قرار")
+
+    # The media minister must be able to hold a cabinet that is merely ordinary.
+    # If he cannot, suspicion rises forever on its own and every game ends the
+    # same way whatever the player does.
+    posts = len(m["posts"])
+    # Six points under the floor, not twelve: the intended shape is that a
+    # slightly disloyal cabinet is something a good media minister can carry,
+    # and a collapsing one is not. Testing against a collapsing cabinet would
+    # make the check demand a media minister who cancels any failure at all.
+    ordinary_gap = 6
+    talk = posts * ordinary_gap * h["disloyal_coef"]
+    best_media = (100 - h["media_floor"]) * h["media_coef"]
+    if talk > best_media + h["monthly_decay"]:
+        problems.append(
+            f"حكومة عادية بتطلّع {talk:.1f} شبهة في الشهر، وأحسن وزير إعلام + "
+            f"النزول الطبيعي بيشيلوا {best_media + h['monthly_decay']:.1f} بس — "
+            f"يعني حتى حكومة ولاؤها واطي شوية بتطلّع شبهة مفيش طريقة توقّفها")
+    # And the reverse: a media minister who can cancel a whole corrupt cabinet
+    # makes the post the only decision in the game.
+    if best_media > talk * 2.5:
+        problems.append("وزير إعلام واحد بيلغي حكومة كاملة مش موالية — "
+                        "المنصب ده بقى الحل الوحيد لكل حاجة")
+
+    if not (0 < h["scandal_at"] < h["cap"]):
+        problems.append(f"خط الفضيحة {h['scandal_at']} برّه المدى ٠..{h['cap']}")
+
+    # Stealing must be the expensive one, or the corruption screen and the heat
+    # screen tell the player opposite things.
+    if h["steal_per_100m"] <= h["print_per_100m"]:
+        problems.append("السرقة شبهتها أقل من طباعة الفلوس أو زيها — "
+                        "يبقى مفيش سبب تطبع أصلاً")
+
+    # The heat must reach the screen. A number the player is punished by and
+    # never shown is exactly what this whole system was built not to be.
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    if "S.heat" not in ui:
+        problems.append("ui.js: الشبهة مش ظاهرة في أي شاشة — رقم بيعاقب اللاعب وهو مش شايفه")
+    if "heatSources" not in ui:
+        problems.append("ui.js: الشاشة مش بتوري الشبهة جاية منين — "
+                        "القاعدة إن مفيش رقم من غير سبب مقروء")
+
+
+def check_save(problems):
+    """The save is the only thing in the project that can silently run the game
+    on numbers from a build that no longer exists. That is worse than losing a
+    game: nothing on screen says the rules changed underneath you.
+
+    So: every save carries the build fingerprint, the loader refuses one that
+    does not match, the save is written from the one place no branch can skip,
+    it dies with the president, and no touch of storage is left unguarded."""
+    engine = strip_js_comments((ROOT / "game" / "src" / "engine.js").read_text(encoding="utf-8"))
+    ui = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    builder = (TOOLS / "build_game.py").read_text(encoding="utf-8")
+
+    if "__BUILD__" not in builder or "sha256" not in builder:
+        problems.append("build_game.py مش بيحط بصمة بناء في اللعبة — "
+                        "الحفظ مش هيقدر يعرف إنه من نسخة قديمة")
+    if "var BUILD" not in engine:
+        problems.append("engine.js: مفيش بصمة بناء")
+
+    if "function loadBlob(" not in engine or "function saveBlob(" not in engine:
+        problems.append("engine.js: مفيش دوال حفظ/تحميل")
+        return
+    loader = engine.split("function loadBlob(", 1)[1].split("\n}", 1)[0]
+    if "BUILD" not in loader:
+        problems.append("engine.js: التحميل مش بيقارن بصمة البناء — حفظ من نسخة قديمة "
+                        "هيتحمّل، واللعبة هتشتغل بأرقام نص/نص من غير ما حد ياخد باله")
+    if "SAVE_VERSION" not in loader:
+        problems.append("engine.js: التحميل مش بيقارن إصدار الحفظ")
+    # It must be able to say no. A loader that always returns a state is not a
+    # guard, whatever it checks on the way.
+    if "return '" not in loader:
+        problems.append("engine.js: التحميل مش بيرجّع سبب رفض أبدًا — يعني مفيش حفظ "
+                        "هيترفض مهما كان")
+
+    # Written from the redraw, so no branch of the click handler can forget it.
+    draw = ui.split("function drawGame()", 1)
+    if len(draw) < 2 or "persist()" not in draw[1].split("\n}", 1)[0]:
+        problems.append("ui.js: الحفظ مش بيتكتب من drawGame — يعني فيه أفعال هتضيع، "
+                        "وكل واحدة منها هتبقى «اللعبة أكلت حركتي»")
+    persist = ui.split("function persist()", 1)
+    if len(persist) < 2 or "S.dead" not in persist[1].split("\n}", 1)[0]:
+        problems.append("ui.js: الحفظ مش بيتمسح لما اللاعب يموت — يعني الموت بقى "
+                        "«اقفل التطبيق وافتحه تاني»، والعشوائية المحفوظة بالبذرة "
+                        "مبقاش ليها لازمة")
+
+    # Storage can be missing, full or switched off. Every touch goes through the
+    # two guarded helpers, or a phone with site data blocked gets a dead app.
+    if "function storeGet(" not in ui or "function storeSet(" not in ui:
+        problems.append("ui.js: مفيش دوال آمنة للتخزين")
+    else:
+        for name in ("storeGet", "storeSet"):
+            body = ui.split("function " + name + "(", 1)[1].split("\n}", 1)[0]
+            if "try" not in body or "catch" not in body:
+                problems.append(f"ui.js: {name} مش متغلّفة بـ try/catch — "
+                                f"موبايل مقفّل عليه التخزين هياخد تطبيق ميت")
+    stray = [m.start() for m in re.finditer(r"localStorage", ui)]
+    guarded = ui.split("function storeGet(")[1].split("function loadPrefs")[0]
+    if len(stray) > guarded.count("localStorage"):
+        problems.append("ui.js: فيه استخدام لـ localStorage برّه storeGet/storeSet — "
+                        "ده اللي بيقع التطبيق على موبايل مقفّل عليه التخزين")
+
+    # And the log, which is written whole on every save.
+    if "LOG_KEEP" not in engine:
+        problems.append("engine.js: السجل مالوش حد — الحفظ هيكبر كل شهر في لعبة طويلة")
+    elif re.search(r"S\.log\.push", ui):
+        problems.append("ui.js: فيه سطر بيزوّد السجل من غير ما يعدي على logLine — "
+                        "الحد بتاع السجل بيتلغي من غير ما حد ياخد باله")
+
+
+def check_situation_card_is_compulsory(problems):
+    """The player asked for every situation to stop the clock. That only holds if
+    the card he answers on has no way out — and "no way out" is exactly the kind
+    of promise that rots: somebody adds a ✕ for symmetry with the other sheets,
+    or the phone's back key walks the stack and the card goes with it.
+
+    So the rules are mechanical. The card is drawn from S.pendingSituation on
+    every redraw, only the engine clears that field, and every route out of a
+    screen — the back key, the sheet's close, the play button — is checked here
+    by name. Each of these has a matching deliberate breakage in test_check.py."""
+    src = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    shell = (ROOT / "game" / "src" / "index.html").read_text(encoding="utf-8")
+
+    if 'id="sit"' not in shell:
+        problems.append("index.html: مفيش مكان لكارت الموقف — الموقف هيوقف الوقت من غير ما يبان")
+    if "function drawSituation()" not in src:
+        problems.append("ui.js: مفيش دالة بترسم كارت الموقف")
+        return
+    # Drawn on every redraw, not once when the situation lands: a card drawn once
+    # disappears the moment anything else redraws the screen, and the clock stays
+    # frozen with nothing on screen to explain why.
+    # The whole function body, not its first line: drawGame grew past one line
+    # when it started saving, and reading only the first line would have said
+    # the card was gone when it was not.
+    body = src.split("function drawGame()")[-1].split("\n}")[0]
+    if "drawSituation()" not in body:
+        problems.append("ui.js: drawGame ما بينداش drawSituation — الكارت مش هيترسم مع كل تحديث")
+
+    # The engine owns the field. If the screen could clear it, every guard below
+    # is decoration.
+    if re.search(r"\.pendingSituation\s*=", src):
+        problems.append("ui.js: الواجهة بتمسح الموقف بنفسها — ده باب هروب من قرار المفروض إجباري، "
+                        "المحرك بس هو اللي يقفل الموقف")
+
+    back = src.split("function onAndroidBack()")[-1].split("\n}")[0]
+    if "pendingSituation" not in back:
+        problems.append("ui.js: زرار الرجوع بتاع الموبايل مش بيحسب حساب الموقف المفتوح — "
+                        "ضغطة واحدة هتطلّع اللاعب من قرار مفروض إجباري")
+
+    run = src.split("function setRunning(")[-1].split("\n}")[0]
+    if "pendingSituation" not in run:
+        problems.append("ui.js: الوقت ينفع يمشي والموقف لسه مفتوح — الوقف بيتلغي من غير قرار")
+
+    # The card must not carry a close button of any kind.
+    card = src.split("function drawSituation()")[-1].split("\nfunction ")[0]
+    for escape in ("data-close", "data-back", "data-tab", "data-open"):
+        if escape in card:
+            problems.append(f"ui.js: كارت الموقف فيه «{escape}» — ده باب خروج من غير قرار")
+
+    if "data-answer" not in src:
+        problems.append("ui.js: مفيش زرار إجابة على الموقف — اللاعب هيتقفل عليه")
+    elif "'data-answer'" not in src.split("var CLICKABLE = [")[-1].split("]")[0]:
+        problems.append("ui.js: زرار الإجابة مش مسجّل في قايمة الضغطات — هيبان وميعملش حاجة")
+
+
+def check_situation_costs_are_shown(problems):
+    """A choice whose price the screen has no wording for renders as a blank —
+    a button that reads as free and then takes the money. The screen must know
+    how to write out every kind of cost the data can ask for, in both
+    directions: an unknown key in the data, and a wording in the screen for a
+    key the checker would reject."""
+    try:
+        s = json.loads((DATA / "situations.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        problems.append(f"situations.json مش بيتقري — {e}")
+        return
+    src = strip_js_comments((ROOT / "game" / "src" / "ui.js").read_text(encoding="utf-8"))
+    if "var COST_LABEL = {" not in src:
+        problems.append("ui.js: مفيش جدول بيكتب تمن الاختيارات — الأتمان هتظهر فاضية")
+        return
+    block = src.split("var COST_LABEL = {", 1)[1].split("\n};", 1)[0]
+    labelled = set(re.findall(r"^\s{2}([a-zA-Z]+):", block, re.M))
+    for sit in s["situations"]:
+        for ch in sit.get("choices", []):
+            for k in ch.get("cost", {}):
+                if k not in labelled:
+                    problems.append(f"موقف «{sit['id']}» اختيار «{ch['nm']}» بيدفع «{k}» "
+                                    f"والشاشة مش عارفة تكتبها — الزرار هيبان مجاني وياخد الفلوس")
+    for k in labelled - {"ap", "treasury", "personal"}:
+        problems.append(f"ui.js: الشاشة بتكتب تمن «{k}» والمحرك مش بيخصمه — هتقول للاعب "
+                        f"إنه دفع حاجة ما اتدفعتش")
+
+
+def check_dead_asset_links(problems):
+    """A file the page asks the browser for and that is not there fails
+    silently: no error the player sees, just a missing icon. Three of these were
+    left behind when the web-app files were retired, and nothing noticed."""
+    for rel in ("game/src/index.html", "game/index.html", "index.html"):
+        p = ROOT / rel
+        if not p.exists():
+            continue
+        src = p.read_text(encoding="utf-8")
+        for m in re.finditer(r'(?:href|src)="([^"#:?]+)"', src):
+            target = m.group(1)
+            if target.startswith(("http", "//", "data:", "mailto:")) or target.endswith("/"):
+                continue
+            if not (p.parent / target).exists():
+                problems.append(f"{rel}: بيطلب الملف «{target}» وهو مش موجود")
 
 
 def check_navigation(problems):
@@ -762,6 +1512,74 @@ def check_simulator(problems):
             problems.append(f"«{name}» وصل آخر المحاكاة ({horizon} شهر) وما ماتش — "
                             "يعني فيه طريقة لعب بتخلّيك خالد، وإحنا مش شايفينها")
 
+    # ---- suspicion, measured on the four bots ----------------------------
+    # The whole point of the meter is that it separates ways of playing. These
+    # are the two ways it stops doing that, and neither shows up anywhere else.
+    heat = sim["heat"]
+    hb = json.loads((DATA / "balance.json").read_text(encoding="utf-8"))["heat"]
+    if heat["معقول"]["peak"] >= hb["scandal_at"]:
+        problems.append(f"اللاعب المعقول — اللي ما سرقش ولا مليم — وصل شبهة "
+                        f"{heat['معقول']['peak']} والخط {hb['scandal_at']}. "
+                        f"يعني الشبهة بتقيس الوقت مش الفساد")
+    if heat["معقول"]["scandals"] > 1:
+        problems.append(f"اللاعب المعقول شاف {heat['معقول']['scandals']} فضيحة — "
+                        f"اللعب الصح المفروض يعدّي من غيرها")
+    if heat["حرامي"]["peak"] < hb["scandal_at"]:
+        problems.append(f"الحرامي سرق {heat['حرامي']['stolen']}م وشبهته أعلى حاجة وصلتها "
+                        f"{heat['حرامي']['peak']} والخط {hb['scandal_at']} — السرقة ببلاش")
+    if heat["حرامي"]["stolen"] <= 0:
+        problems.append("الحرامي سرق طول عمره واللي اتسجّل صفر — "
+                        "مجموع اللي اتسرق مش بيتسجّل، والفضايح المبنية عليه مش هتحصل أبدًا")
+    if heat["حرامي"]["scandals"] < 1:
+        problems.append("الحرامي عاش عمره كله من غير ولا فضيحة — النظام كله مش شغال")
+    # And the interruptions the two systems together produce, per bot. The gates
+    # bound the worst case on paper; this is what actually happened.
+    for name, x in sim["interruptions"].items():
+        if x["everyMonths"] and x["everyMonths"] < 4:
+            problems.append(f"«{name}» بيتقاطع كل {x['everyMonths']} شهر — "
+                            f"دي مش لعبة، دي مقاطعة مستمرة")
+
+    # ---- repression ------------------------------------------------------
+    # Two edges, and the feature is worthless outside them: a button that buys
+    # nothing is a screen the player learns to ignore, and one that buys years
+    # turns the game into "beat people up until it works".
+    k = sim["crackdown"]
+    if k["used"] < 1:
+        problems.append("رئيس فاشل بيدوس زرار القمع كل ما يقدر واستخدمه صفر مرة — "
+                        "يعني الشرط بتاع الغليان بيفتح الزرار بعد ما الأوان يفوت")
+    bought = k["failingWithBaton"] - k["failingPlain"]
+    if bought <= 0:
+        problems.append(f"القمع اشترى {bought} شهر لرئيس فاشل — الزرار ده ديكور")
+    if k["failingWithBaton"] > k["failingPlain"] * 1.6:
+        problems.append(f"القمع مدّ عمر رئيس فاشل من {k['failingPlain']} لـ"
+                        f"{k['failingWithBaton']} شهر — بقى استراتيجية مش تأجيل")
+    # And the promise the setup screen makes to the dictator.
+    dict_bought = k["dictatorWithBaton"] - k["dictatorPlain"]
+    if dict_bought <= bought:
+        problems.append(f"القمع اشترى للديكتاتوري {dict_bought} شهر وللجمهوري {bought} — "
+                        f"وشاشة البداية بتوعد الديكتاتوري إن القمع بينجح عنده أكتر")
+
+    # ---- the army --------------------------------------------------------
+    # The only measurement that matters: how long a president who lets the army
+    # go actually has. Too short and one bad appointment ends a twenty-year run
+    # from a card he tapped once; too long and the whole meter is decoration.
+    neglect = sim["army"]["neglect"]
+    if neglect["died"] != "coup":
+        problems.append(f"رئيس سايب الجيش تحت الخط عاش {neglect['months']} شهر ومماتش "
+                        f"بانقلاب — يعني الجيش نظام مالوش نهاية")
+    elif not 24 <= neglect["months"] <= 90:
+        problems.append(f"رئيس سايب الجيش تحت الخط بينقلب عليه بعد {neglect['months']} شهر — "
+                        f"المفروض بين سنتين وسبع سنين، عشان يبقى فيه وقت يشوف التنبيهات "
+                        f"ويتصرف من غيرها ما تبقاش تهديد")
+    # And the bots that DO watch the defence chair must not be dying of it: if
+    # they were, the number above would be measuring the wrong thing.
+    for name, x in sim["army"].items():
+        if name == "neglect":
+            continue
+        if x["died"] == "coup":
+            problems.append(f"«{name}» بيراقب وزير الدفاع وبرضه اتنقلب عليه — "
+                            f"يعني الجيش بياخد لاعبين مش مهملينه")
+
     # No starting combination may be hopeless. Anything under a third of the best
     # is not a hard mode, it is a trap for whoever picks it.
     combos = sim["combos"]
@@ -780,45 +1598,35 @@ def check_android(problems):
     check_android.check(problems)
 
 
-def check_installable(problems):
-    """The game installs on a phone as an app. That needs a manifest, icons and
-    a service worker that all agree with each other — and a missing icon or a
-    typo'd path fails silently, leaving the install button simply absent."""
-    game = ROOT / "game"
-    mf = game / "manifest.webmanifest"
-    if not mf.exists():
-        problems.append("مفيش ملف manifest — اللعبة مش هتتثبت على الموبايل")
-        return
-    try:
-        m = json.loads(mf.read_text(encoding="utf-8"))
-    except Exception as e:
-        problems.append(f"manifest مش بيتقري — {e}")
-        return
-    for key in ("name", "start_url", "scope", "display", "icons", "background_color"):
-        if key not in m:
-            problems.append(f"manifest ناقصه «{key}»")
-    for ic in m.get("icons", []):
-        if not (game / ic["src"]).exists():
-            problems.append(f"manifest بيشاور على أيقونة مش موجودة: {ic['src']}")
-    if not any(i.get("purpose") == "maskable" for i in m.get("icons", [])):
-        problems.append("مفيش أيقونة maskable — الأندرويد هيقص الأيقونة غلط")
-    if m.get("display") != "standalone":
-        problems.append("manifest لازم display يكون standalone عشان تفتح من غير المتصفح")
+def check_no_retired_files(problems):
+    """Files we deliberately removed must stay removed, and files that belong in
+    tools/ must not appear at the repo root.
 
-    sw = game / "sw.js"
-    if not sw.exists():
-        problems.append("مفيش sw.js — اللعبة مش هتشتغل من غير نت")
-        return
-    swt = sw.read_text(encoding="utf-8")
-    # everything the worker promises to cache must actually be there
-    for rel in re.findall(r"'\./([\w.-]+)'", swt):
-        if rel and not (game / rel).exists():
-            problems.append(f"sw.js بيحاول يخزّن ملف مش موجود: {rel}")
-    page = (game / "index.html").read_text(encoding="utf-8")
-    if 'rel="manifest"' not in page:
-        problems.append("game/index.html مش رابط الـmanifest — الموبايل مش هيعرض زرار التثبيت")
-    if "serviceWorker" not in page:
-        problems.append("اللعبة مش بتسجّل الـservice worker — مفيش تشغيل من غير نت")
+    Both have already happened: the game shipped as an installable web app for a
+    while before Karim said he wanted an APK only, and a browser upload once
+    dropped three copies of tools/ scripts into the root while the real ones in
+    tools/ stayed stale — the build went red and looked like a code bug for two
+    rounds. Neither leaves any other trace."""
+    retired = ["game/manifest.webmanifest", "game/sw.js", "game/icon-192.png",
+               "game/icon-512.png", "game/icon-maskable.png", "tools/sim.py",
+               "tools/export_balance.py"]
+    for rel in retired:
+        if (ROOT / rel).exists():
+            problems.append(f"«{rel}» اتشال من المشروع ورجع تاني — امسحه")
+
+    for f in TOOLS.glob("*"):
+        if f.suffix not in (".py", ".js"):
+            continue
+        stray = ROOT / f.name
+        if stray.exists() and stray.is_file():
+            problems.append(f"«{f.name}» موجود في جذر المشروع والمفروض في tools/ بس — "
+                            f"غالبًا رفعة وقعت في المكان الغلط، والنسخة الحقيقية في tools/ "
+                            f"ممكن تكون لسه قديمة")
+
+    page = (ROOT / "game" / "index.html").read_text(encoding="utf-8")
+    for gone in ("serviceWorker", 'rel="manifest"'):
+        if gone in page:
+            problems.append(f"اللعبة لسه فيها «{gone}» — ده بقايا نسخة الويب اللي اتشالت")
 
 
 def check_progress_bar(problems):
@@ -855,12 +1663,18 @@ def check_game_runs(problems):
 
 CHECKS = [
     check_html_structure, check_anchors, check_tables, check_theme, check_svg,
-    check_javascript, check_balance_json, check_setup_json, check_ministers_json, check_treasury, check_parliament, check_bank,
+    check_javascript, check_balance_json, check_setup_json, check_situations, check_ministers_json, check_treasury, check_parliament, check_bank,
     check_browser_globals_are_faked, check_engine_is_repeatable,
     check_simulator_has_no_rules,
-    check_ui_once_only, check_navigation, check_clipped_text,
+    check_ui_once_only, check_no_duplicated_block, check_navigation, check_clipped_text,
+    check_no_class_defined_twice, check_modifier_is_not_a_block,
+    check_meters_fit_their_grid,
+    check_army, check_crackdown, check_minister_notes_match_the_rules,
+    check_save,
+    check_heat, check_situation_card_is_compulsory, check_situation_costs_are_shown,
+    check_dead_asset_links,
     check_every_class_is_styled,
-    check_generated_files_match, check_android, check_installable, check_progress_bar, check_game_runs, check_simulator,
+    check_generated_files_match, check_android, check_no_retired_files, check_progress_bar, check_game_runs, check_simulator,
 ]
 
 

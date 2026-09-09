@@ -45,6 +45,7 @@ S0 = {"approval": sim_out["start"]["approval"], "stability": sim_out["start"]["s
 LIFE = {k: v["lifespan"] for k, v in sim_out["players"].items()}
 FIRST = sim_out["firstMonth"]
 COMBOS = sim_out["combos"]
+SIM_ARMY = sim_out["army"]
 
 total_ask = sum(sv[k]["monthly_ask"] for k in SV_ORDER)
 run_bill = total_ask * st["budget_pct"] / 100
@@ -319,14 +320,130 @@ h.append(f'''
   الشغب مش بيقوم بالرضا الواطي لوحده. لازم <strong>رضا واطي + ثبات واطي</strong> في نفس الشهر. يعني رئيس شعبيته صفر بس ماسك السياسة كويس ممكن يعيش — ورئيس محبوب بس حكومته متفككة ممكن يقع. <em>ودي بالظبط الحقيقة السياسية اللي عايزين اللاعب يحسها.</em></div>
 </section><hr>''')
 
-# ---------------------------------------------------------------- 9 sim
+# ---------------------------------------------------------------- 8b heat
+HT = B["heat"]
+SITS = json.load(open(DATA / "situations.json", encoding="utf-8"))
+SCANDALS = [x for x in SITS["situations"] if x.get("kind") == "scandal"]
+SCANDAL_ROWS = "".join(
+    f'<tr><td class="k">{x["icon"]} {x["title"]}</td>'
+    f'<td class="n">{ar(min(c[2] for c in x["when"] if c[0] == "heat"))}</td>'
+    f'<td>{"محتاجة إنك سرقت فعلاً" if any(c[0] == "stolenTotal" for c in x["when"]) else "بتحصل لأي رئيس"}</td></tr>'
+    for x in sorted(SCANDALS, key=lambda y: min(c[2] for c in y["when"] if c[0] == "heat")))
+posts_n = len(MIN["posts"])
+h.append(f'''
+<section id="hh">
+  <h2><span class="num">٩</span>الشبهة والفضايح</h2>
+  <p class="lede">رقم واحد بيتجمّع، ولما يعدّي خط بتحصل فضيحة. الفضيحة موقف — بتوقف الوقت وبتخليك تختار تدفع تمنها إزاي.</p>
+  <div class="formula">
+    <div class="eq">الشبهة كل شهر = (وزرا ولاؤهم تحت {ar(HT["disloyal_floor"])}) − (وزير الإعلام) − {HT["monthly_decay"]}</div>
+    <p class="why">وزير الإعلام هو المنصب الوحيد اللي شغله كله على الرقم ده. الشكل المقصود: حكومة ولاؤها واطي <strong>شوية</strong> بيشيلها، وحكومة منهارة بجد بتطلّع شبهة مفيش وزير إعلام يقدر يوقفها — يعني الشبهة مش عقاب على الفساد بس، دي كمان نتيجة إنك مش ماسك حكومتك.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>الرقم</th><th>القيمة</th><th>ليه كده</th></tr></thead>
+    <tbody>
+      <tr><td class="k">السقف</td><td class="n">{ar(HT["cap"])}</td><td>وكل الخطوط تحته</td></tr>
+      <tr><td class="k">خط الفضيحة</td><td class="n">{ar(HT["scandal_at"])}</td><td>فوقه بتحصل فضيحة أول ما البوابة تسمح</td></tr>
+      <tr><td class="k">بينسى لوحده</td><td class="n">−{HT["monthly_decay"]}/شهر</td><td>عشان الرقم يبقى قرار مش عدّاد للموت</td></tr>
+      <tr><td class="k">كل وزير مش موالي</td><td class="n">+{HT["disloyal_coef"]} لكل نقطة تحت {ar(HT["disloyal_floor"])}</td><td>{ar(posts_n)} وزرا، فالحكومة كلها ممكن توصّلك لوحدها</td></tr>
+      <tr><td class="k">وزير الإعلام</td><td class="n">−{HT["media_coef"]} لكل نقطة كفاءة فوق {ar(HT["media_floor"])}</td><td>أحسن وزير بيشيل {ar(round((100-HT["media_floor"])*HT["media_coef"],1))} في الشهر</td></tr>
+      <tr><td class="k">السرقة</td><td class="n">+{HT["steal_per_100m"]} لكل ١٠٠م</td><td>أغلى مصدر — وبفارق كبير</td></tr>
+      <tr><td class="k">لو وزير المالية سرّبك</td><td class="n">+{ar(HT["leak_extra"])}</td><td>فوق تمن السرقة نفسها</td></tr>
+      <tr><td class="k">طبع الفلوس</td><td class="n">+{HT["print_per_100m"]} لكل ١٠٠م</td><td>أرخص من السرقة عشان يفضل ليه لازمة</td></tr>
+      <tr><td class="k">تغيير محافظ البنك</td><td class="n">+{ar(HT["governor_swap"])}</td><td>الحركة اللي شكلها وحش من برّه</td></tr>
+      <tr><td class="k">تمنها على الثبات</td><td class="n">×{HT["stability_coef"]}</td><td>شبهة {ar(HT["cap"])} = −{ar(round(HT["cap"]*HT["stability_coef"]))} ثبات كل شهر</td></tr>
+    </tbody>
+  </table></div>
+  <h3>الفضايح</h3>
+  <div class="tw"><table>
+    <thead><tr><th>الفضيحة</th><th>بتحصل عند شبهة</th><th>شرطها</th></tr></thead>
+    <tbody>{SCANDAL_ROWS}</tbody>
+  </table></div>
+  <div class="risk"><b>أهم قرار هنا: الشبهة بتوجعك كل شهر، مش يوم الفضيحة بس</b>
+  الشبهة بتنزّل الثبات باستمرار (×{HT["stability_coef"]}). من غير ده كانت هتبقى رقم ميّت بين الفضيحة والتانية، واللاعب مكانش هيبص عليه غير لما يتأخر. <em>وكمان: الفضيحة اللي موضوعها فلوس مشيت شرطها إنك سرقت فعلاً — عشان ما يتفتحش ملف مالي على رئيس ما خدش مليم.</em></div>
+</section><hr>''')
+
+# ---------------------------------------------------------------- 9b army
+AR_ = json.load(open(DATA / "army.json", encoding="utf-8"))
+BR = AR_["bribe"]
+h.append(f'''
+<section id="ar">
+  <h2><span class="num">١٠</span>الجيش</h2>
+  <p class="lede">مفيش مؤشر اسمه «رضا الجيش». <strong>ولاء وزير الدفاع هو الجيش</strong> — رقم واحد، لواحد ليه اسم ووش على شاشة تقدر تفتحها.</p>
+  <div class="formula">
+    <div class="eq">خطر الانقلاب كل شهر = (خط الجيش بتاع نظام حكمك − ولاء وزير الدفاع) × {AR_["risk_per_point_below"]}</div>
+    <p class="why">السرعة بتزيد كل ما نزلت تحت الخط أكتر، عشان ولاء ٣٩ ما يبقاش زي ولاء ١٠. الفرق ده هو اللي بيخلي دفعة صغيرة في وقتها تنفع، وبيخلي التأخير غالي. وفوق الخط الخطر بينزل {AR_["risk_decay_above"]} في الشهر — يعني التعافي حقيقي، مش تأجيل.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>الرقم</th><th>القيمة</th><th>ليه كده</th></tr></thead>
+    <tbody>
+      <tr><td class="k">خط الجيش — جمهوري</td><td class="n">{ar(AR_["line_by_government"]["republic"])}</td><td>فوقه معاك، تحته بيتراكم</td></tr>
+      <tr><td class="k">خط الجيش — ملكي</td><td class="n">{ar(AR_["line_by_government"]["monarchy"])}</td><td>الشرعية موروثة، فالجيش مش مصدرها</td></tr>
+      <tr><td class="k">خط الجيش — ديكتاتوري</td><td class="n">{ar(AR_["line_by_government"]["dictator"])}</td><td>شرعيتك منهم، فبيتوقعوا أكتر — نفس الوزير بيبقى خطر عندك</td></tr>
+      <tr><td class="k">سرعة التراكم</td><td class="n">×{AR_["risk_per_point_below"]}</td><td>لكل نقطة تحت الخط</td></tr>
+      <tr><td class="k">سرعة النزول</td><td class="n">−{AR_["risk_decay_above"]}/شهر</td><td>فوق الخط</td></tr>
+      <tr><td class="k">تمنه على الثبات</td><td class="n">×{AR_["stability_coef"]}</td><td>خطر ١٠٠ = −{ar(round(AR_["risk_cap"]*AR_["stability_coef"]))} ثبات كل شهر</td></tr>
+      <tr><td class="k">التنبيهات</td><td class="n">كل {ar(round(100/AR_["warn_steps"]))}٪</td><td>عشان النهاية ما تجيش من رقم ما شافوش</td></tr>
+    </tbody>
+  </table></div>
+  <h3>الرشوة</h3>
+  <p>من <strong>رصيدك الشخصي</strong> مش من الخزينة. ده مقصود: بيقفل الدايرة اللي اللعبة مبنية عليها — تسرق عشان تدفع للجيش، والسرقة بتطلّع شبهة.</p>
+  <div class="tw"><table>
+    <thead><tr><th>الرقم</th><th>القيمة</th><th>ليه كده</th></tr></thead>
+    <tbody>
+      <tr><td class="k">التمن</td><td class="n">{ar(BR["cost"])}م من جيبك</td><td>+ {ar(BR["ap_cost"])} طاقة قرارات</td></tr>
+      <tr><td class="k">بيرفع الولاء</td><td class="n">+{ar(BR["loyalty_gain"])}</td><td>لو وصلت</td></tr>
+      <tr><td class="k">كل كام شهر</td><td class="n">{ar(BR["once_per_months"])}</td><td>من غير كده الجيش يبقى اشتراك شهري</td></tr>
+      <tr><td class="k">احتمال ما توصلش</td><td class="n">{BR["lost_base_pct"]}٪ + {BR["lost_per_point_below_line"]} لكل نقطة تحت الخط</td><td>بسقف {BR["lost_max_pct"]}٪</td></tr>
+      <tr><td class="k">لو ضاعت</td><td class="n">+{ar(BR["lost_loyalty_gain"])} بس</td><td>الوزير خدها</td></tr>
+      <tr><td class="k">وبتطلّع شبهة</td><td class="n">+{ar(BR["heat"])}</td><td>فلوس بتمشي من جيبك للضباط</td></tr>
+    </tbody>
+  </table></div>
+  <div class="risk"><b>اللي المحاكاة بتقوله</b>
+  رئيس سايب وزير دفاعه تحت الخط بيتنقلب عليه بعد <strong>{ar(SIM_ARMY["neglect"]["months"])} شهر</strong>. والأربع أنماط اللي بيراقبوا المنصب ده أعلى خطر وصلوه <strong>صفر تقريبًا</strong> — يعني الجيش نظام بيضرب اللي بيهمله، مش ضريبة على الكل.</div>
+  <div class="open"><b>سؤال مفتوح</b>
+  الوزير هو الوسيط، فلو ولاؤه واطي أوي ممكن ياخد الفلوس وما توصلش. <strong>هل ده عادل، ولا المفروض يبقى فيه طريقة توصل للضباط من غيره؟</strong> دلوقتي مفيش — وده مقصود عشان المنصب يفضل مهم.</div>
+</section><hr>''')
+
+# --------------------------------------------------------------- 10b crackdown
+CD = json.load(open(DATA / "crackdown.json", encoding="utf-8"))
+SIM_CD = sim_out["crackdown"]
+h.append(f'''
+<section id="cd">
+  <h2><span class="num">١١</span>قمع الشغب</h2>
+  <p class="lede">زرار على مكتب وزير الداخلية، مش موقف بييجي على مزاجه. الغليان بيعلى قدامك بالشهور، فالمقبض لازم يبقى في إيدك لما إنت تقرر.</p>
+  <div class="formula">
+    <div class="eq">احتمال النجاح = {CD["success"]["base_pct"]} + (كفاءة وزير الداخلية × {CD["success"]["per_competence_point"]}) + فرق نظام الحكم</div>
+    <p class="why">هو اللي بينزّل الأمن على الأرض، فكفاءته هي النسبة. ونظام الحكم بيزوّد أو بينقّص — <strong>وده اللي بيخلي كلام شاشة البداية صح</strong>: الديكتاتوري متوعود بإن القمع بينجح عنده أكتر، فلازم يبقى فعلاً كده.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>الحالة</th><th>الغليان</th><th>الرضا</th><th>الثبات</th><th>الشبهة</th></tr></thead>
+    <tbody>
+      <tr><td class="k">نجح</td><td class="n">{ar(CD["win"]["boil"])}</td><td class="n">{ar(CD["win"]["approval"])}</td><td class="n">+{ar(CD["win"]["stability"])}</td><td class="n">+{ar(CD["win"]["heat"])}</td></tr>
+      <tr><td class="k">فشل</td><td class="n">+{ar(CD["fail"]["boil"])}</td><td class="n">{ar(CD["fail"]["approval"])}</td><td class="n">{ar(CD["fail"]["stability"])}</td><td class="n">+{ar(CD["fail"]["heat"])}</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tw"><table>
+    <thead><tr><th>نظام الحكم</th><th>فرق النجاح</th></tr></thead>
+    <tbody>
+      <tr><td class="k">جمهوري</td><td class="n">{ar(CD["success_by_government"]["republic"])}</td></tr>
+      <tr><td class="k">ملكي</td><td class="n">{ar(CD["success_by_government"]["monarchy"])}</td></tr>
+      <tr><td class="k">ديكتاتوري</td><td class="n">+{ar(CD["success_by_government"]["dictator"])}</td></tr>
+    </tbody>
+  </table></div>
+  <div class="risk"><b>أهم قرار هنا: الفشل لازم يبقى أوحش من إنك ما تعملش حاجة</b>
+  لو أسوأ نتيجة للقمع كانت «مفيش فايدة»، مفيش سبب واحد إن اللاعب ما يدوسش الزرار كل مرة يقدر — والقرار مش هيبقى قرار. عشان كده القمع الفاشل بيزوّد الغليان وبينزّل الثبات وبيطلّع شبهة أكتر من الناجح.</div>
+  <div class="risk"><b>اللي المحاكاة بتقوله</b>
+  رئيس فاشل من غير قمع عاش <strong>{ar(SIM_CD["failingPlain"])} شهر</strong>، وبالقمع <strong>{ar(SIM_CD["failingWithBaton"])} شهر</strong>. وتحت الديكتاتورية الفرق أكبر: من <strong>{ar(SIM_CD["dictatorPlain"])}</strong> لـ<strong>{ar(SIM_CD["dictatorWithBaton"])}</strong>. يعني القمع <strong>تأجيل</strong> مش حل — وأغلى وأنفع عند الديكتاتوري، زي ما شاشة البداية بتقول بالظبط.</div>
+</section><hr>''')
+
+# ---------------------------------------------------------------- 12 sim
 # Sorted worst-first: the weak combinations are the ones worth looking at.
 COMBO_ROWS = "".join(
     f'<tr><td class="k">{name}</td><td class="n">{ar(life)} شهر</td></tr>'
     for name, life in sorted(COMBOS.items(), key=lambda kv: kv[1]))
 h.append(f'''
 <section id="t">
-  <h2><span class="num">٩</span>نتيجة المحاكاة</h2>
+  <h2><span class="num">١٢</span>نتيجة المحاكاة</h2>
   <p class="lede">المحاكي بيشغّل <strong>محرك اللعبة نفسه</strong> — مش نسخة منه — بتلات أنماط لعب.
   يعني كل رقم تحت ده رقم اللاعب هيقابله فعلاً.</p>
   <div class="tw"><table>
@@ -362,13 +479,13 @@ h.append(f'''
   </table></div>
 
   <div class="open"><b>اللي المحاكاة ما بتقولوش</b>
-  دي بتختبر <strong>الاقتصاد بس</strong> — الوزرا والأحزاب والفضايح والأحداث لسه ما اتبنوش، فبونصاتهم في اختيارات البداية <strong>لسه مش شغالة</strong>. يعني أي تركيبة بتبان ضعيفة دلوقتي، الحكم عليها مؤجل لحد ما بونصاتها تشتغل. والمحاكي حاليًا <strong>مفيهوش عشوائية</strong>، فجولة واحدة لكل نمط كافية — أول ما ندخل الأحداث العشوائية هنرجع نحسب متوسطات.</div>
+  الوزرا والأحزاب والمواقف والفضايح بقت شغالة، فالأرقام دي بتقيس اللعبة كلها مش الاقتصاد بس. والمواقف فيها عشوائية، فكل نمط بيتقاس بأكتر من جولة والرقم المكتوب هو <strong>الوسيط</strong> مش جولة واحدة. اللي لسه ناقص: الانتخابات، ونهايات الانقلاب اللي بتختلف حسب نظام الحكم.</div>
 </section><hr>''')
 
-# ---------------------------------------------------------------- 10 review
+# ---------------------------------------------------------------- 13 review
 h.append(f'''
 <section id="q">
-  <h2><span class="num">١٠</span>محتاج مراجعتك — بعين محاسب</h2>
+  <h2><span class="num">١٣</span>محتاج مراجعتك — بعين محاسب</h2>
   <p class="lede">دول الأسئلة اللي أنا مش قادر أجاوبها لوحدي، وإجابتك هتغيّر أرقام كتير.</p>
   <div class="open"><b>١ — نسبة الدخل للمصروف</b>
   الدولة بتبدأ بدخل ≈٨٩٠م ومصروف ≈٨٧٠م، يعني فايض ≈٢٠م بس (٢٪). ده مقصود عشان تحس إنك مخنوق من أول يوم. <strong>هل ٢٪ ضيق أوي ولا مظبوط؟</strong></div>

@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#141922">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>الحُكم</title>
@@ -15,7 +13,17 @@
 <div id="artdefs"></div>
 <div id="app">
 
-  <div class="setup" id="setup">
+  <!-- The first thing the app shows. The setup wizard now sits behind it. -->
+  <div class="menu" id="menu">
+    <div class="mhead">
+      <div class="mlogo">🏛️</div>
+      <div class="mname">الحُكم</div>
+      <div class="mline">إنت الرئيس. الأرقام هي اللي بتحكم.</div>
+    </div>
+    <div class="mbody" id="menuBody"></div>
+  </div>
+
+  <div class="setup hidden" id="setup">
     <div class="steps" id="steps"></div>
     <div class="body" id="setupBody"></div>
     <div class="foot" id="setupFoot"></div>
@@ -41,6 +49,9 @@
 
 </div>
 <div class="ovl hidden" id="ovl"></div>
+<!-- The situation card. Deliberately NOT inside #ovl: the overlay is the
+     dismissible layer, and this one must not be dismissible by anything. -->
+<div class="sit hidden" id="sit"></div>
 <div class="toast" id="toast"></div>
 <script>__ART__</script>
 <script>__ENGINE__</script>

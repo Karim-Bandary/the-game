@@ -15,6 +15,14 @@ var SETUP     = __SETUP__;
 var MINISTERS = __MINISTERS__;
 var PARLIAMENT = __PARLIAMENT__;
 var BANK       = __BANK__;
+var SITUATIONS = __SITUATIONS__;
+var ARMY       = __ARMY__;
+var CRACKDOWN  = __CRACKDOWN__;
+
+/* A fingerprint of the data and the rules this bundle was built from, filled in
+   by tools/build_game.py. Its only job is to tell a save file from THIS build
+   apart from a save file written by an older one. */
+var BUILD = '__BUILD__';
 
 /* Seconds of real time per in-game month. Slow is deliberately slow: the player
    should be able to read a screen before the month turns. */
@@ -69,6 +77,60 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
+/* --------------------------------------------------------------- the save */
+
+/* Only the last few lines are ever read, so the rest is weight on every write.
+   Every push to the log goes through here. */
+var LOG_KEEP = 60;
+function logLine(S, line) {
+  S.log.push(line);
+  if (S.log.length > LOG_KEEP) S.log.splice(0, S.log.length - LOG_KEEP);
+}
+
+var SAVE_VERSION = 1;
+
+function saveBlob(S) {
+  return JSON.stringify({ v: SAVE_VERSION, build: BUILD, state: S });
+}
+
+/* Returns the state, or a sentence saying why this save cannot be used. It is
+   never a crash and never a half-load: a save from an older build can name a
+   minister post or a situation that no longer exists, and a game running on
+   half-old data with nothing on screen saying so is worse than losing it.
+
+   The build fingerprint alone would be enough for our own releases; the shape
+   checks below are for the case the fingerprint cannot see — a file edited by
+   hand, or storage that came back truncated. */
+function loadBlob(text) {
+  var blob;
+  try { blob = JSON.parse(text); } catch (e) { return 'الحفظ باظ ومش بيتقري'; }
+  if (!blob || blob.v !== SAVE_VERSION) return 'الحفظ ده من نسخة أقدم من اللعبة';
+  if (blob.build !== BUILD) return 'الحفظ ده اتعمل بنسخة تانية من اللعبة';
+
+  var S = blob.state, i;
+  if (!S || typeof S !== 'object') return 'الحفظ فاضي';
+  for (i = 0; i < POST_IDS.length; i++) {
+    if (!S.ministers || !S.ministers[POST_IDS[i]]) return 'الحفظ ناقصه وزير';
+  }
+  for (i = 0; i < GOV_IDS.length; i++) {
+    if (!S.govAppr || S.govAppr[GOV_IDS[i]] === undefined) return 'الحفظ ناقصه محافظة';
+    if (!S.level || !S.level[GOV_IDS[i]]) return 'الحفظ ناقصه أرقام محافظة';
+  }
+  for (i = 0; i < SERVICE_IDS.length; i++) {
+    if (!S.pct || S.pct[SERVICE_IDS[i]] === undefined) return 'الحفظ ناقصه خدمة';
+  }
+  if (!govOf(S) || !socOf(S)) return 'الحفظ فيه نظام حكم مش موجود';
+  if (S.pendingSituation && !situationById(S.pendingSituation)) {
+    return 'الحفظ مستني موقف مش موجود في النسخة دي';
+  }
+  return S;
+}
+
+/* One line for the screens, so a menu never has to reach into the state. */
+function saveLabel(S) {
+  return S.country + ' · السنة ' + S.year + ' · الشهر ' + S.month;
+}
+
 /* ---------------------------------------------------------------- new game */
 
 function newGame(choice) {
@@ -97,6 +159,16 @@ function newGame(choice) {
     approval: SETUP.base_start.approval,
     stability: SETUP.base_start.stability,
     boil: 0,
+    // Suspicion. Deliberately one number and deliberately visible: the whole
+    // corruption system is built on showing the risk before the tap, and a
+    // hidden accumulator that suddenly detonates is a punishment, not a choice.
+    heat: 0,
+    // The coup risk. Not the army itself — the army IS the defence minister's
+    // loyalty, which is a number the player already has a face and a name for.
+    // This is what that loyalty COSTS him while it sits under the line.
+    coupRisk: 0,
+    lastBribe: -ARMY.bribe.once_per_months,
+    lastCrackdown: -CRACKDOWN.cost.once_per_months,
     ap: SETUP.base_start.ap,
     apMax: SETUP.base_start.ap,
 
@@ -116,7 +188,17 @@ function newGame(choice) {
 
     projects: [],
     stoleThisMonth: false,
+    // Everything ever taken, which never goes down. `personal` cannot answer
+    // "did this man steal" — it decays with inflation and gets spent, so a
+    // thief who spent it all would look exactly like an honest president to any
+    // rule that asked. Scandals about money read this instead.
+    stolenTotal: 0,
     lastReshuffle: 0,
+    // The situation waiting for an answer, and the record of what you decided.
+    // The clock cannot advance while one is pending — that is what "every
+    // situation stops time" means in the engine rather than in the screen.
+    pendingSituation: null,
+    sitHistory: [],
     // The governor is deliberately NOT one of the ministers: he cannot be swept
     // out by a reshuffle, and his independence is the only thing standing
     // between the player and the printing press.
@@ -124,6 +206,9 @@ function newGame(choice) {
             lastPrint: -BANK.print.once_per_months, lastSwap: 0 },
     foodPrice: BALANCE.food.price_base,
     lastMonth: null,   // the numbers behind the last tick, for the screens
+    // Only the last few lines are ever shown, and the whole state is written to
+    // the save every month — so an uncapped log would quietly make the save
+    // bigger every month of a twenty-year game.
     log: [],
     dead: null
   };
@@ -317,7 +402,8 @@ function danger(S) {
     approval: S.approval < BALANCE.mood.approval_danger,
     stability: S.stability < BALANCE.mood.stability_danger,
     inflation: S.inflation > BALANCE.inflation.pain_starts_above,
-    treasury: S.treasury < 0
+    treasury: S.treasury < 0,
+    heat: S.heat >= BALANCE.heat.scandal_at
   };
 }
 
@@ -439,6 +525,412 @@ function blocAverage(S) {
   return w ? t / w : 0;
 }
 
+/* --------------------------------------------------------------- crackdown */
+
+/* The chance the streets are actually cleared. Two inputs and both are things
+   the player chose: the interior minister he appointed, and the government he
+   started with. The setup screen promises the dictator that repression works
+   better for him, so that promise has to be a number in here rather than a
+   sentence on a screen. */
+function crackdownChance(S) {
+  var c = CRACKDOWN.success;
+  var byGov = CRACKDOWN.success_by_government;
+  var gov = (byGov && byGov[S.govId] !== undefined) ? byGov[S.govId] : 0;
+  var v = c.base_pct + ministerComp(S, 'interior') * c.per_competence_point + gov;
+  return Math.max(c.min_pct, Math.min(c.max_pct, v));
+}
+
+function crackdownRefusal(S) {
+  var c = CRACKDOWN.cost, since = S.totalMonths - S.lastCrackdown;
+  if (S.boil < CRACKDOWN.boil_floor) {
+    return 'الشارع هادي — مفيش حاجة تتقمع (الغليان لازم يوصل '
+      + CRACKDOWN.boil_floor + ')';
+  }
+  if (S.ap < c.ap) return 'محتاج ' + c.ap + ' طاقة قرارات';
+  if (S.treasury < c.treasury) return 'الخزينة ناقصة ' + Math.ceil(c.treasury - S.treasury) + 'م';
+  if (since < c.once_per_months) {
+    return 'قمعت من ' + since + ' شهر — استنى ' + (c.once_per_months - since) + ' كمان';
+  }
+  return null;
+}
+
+/* Returns { ok, worked } or a refusal string. A failed crackdown is worse than
+   doing nothing, on purpose: if the worst outcome were "no effect", there would
+   be no reason not to press this every time it is available, and it would stop
+   being a decision. */
+function crackdown(S) {
+  var refusal = crackdownRefusal(S);
+  if (refusal) return refusal;
+  var c = CRACKDOWN.cost;
+  var roll = rngFrom(hashStr(S.seed + '|crackdown|' + S.totalMonths))();
+  var worked = roll * 100 < crackdownChance(S);
+  var out = worked ? CRACKDOWN.win : CRACKDOWN.fail;
+
+  S.ap -= c.ap;
+  S.treasury -= c.treasury;
+  S.lastCrackdown = S.totalMonths;
+
+  S.boil = Math.max(0, S.boil + out.boil);
+  S.approval = clamp(S.approval + out.approval);
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    S.govAppr[GOV_IDS[i]] = clamp(S.govAppr[GOV_IDS[i]] + out.approval);
+  }
+  S.stability = clamp(S.stability + out.stability);
+  addHeat(S, out.heat);
+  return { ok: true, worked: worked };
+}
+
+/* ------------------------------------------------------------------- army */
+
+/* There is no separate "army mood". The player chose that deliberately: the
+   defence minister's loyalty IS the army, so there is one number to watch and
+   it belongs to a man with a name on a screen he can already open. Everything
+   below reads through this one function, so if that ever changes it changes in
+   one place. */
+function army(S) { return S.ministers.defence.loyalty; }
+
+/* The line the officers hold you to, which is not the same line for everyone.
+   A president whose legitimacy comes FROM the army is held to more by it — so
+   the same defence minister who is fine under a republic is a danger under a
+   dictatorship. This is what makes the warning on the setup screen true rather
+   than decorative, and it is the only place the choice of government reaches
+   the barracks. */
+function armyLine(S) {
+  var byGov = ARMY.line_by_government;
+  return (byGov && byGov[S.govId] !== undefined) ? byGov[S.govId] : ARMY.loyalty_line;
+}
+
+/* How fast the risk builds this month. Deeper under the line is faster, which
+   is what makes a small bribe worth taking EARLY rather than a big one later —
+   without the slope, loyalty 39 and loyalty 5 would be the same emergency and
+   there would be nothing to react to. */
+function coupRiskChange(S) {
+  var a = ARMY, gap = armyLine(S) - army(S);
+  return gap > 0 ? gap * a.risk_per_point_below : -a.risk_decay_above;
+}
+
+/* The chance the money never reaches the officers. The defence minister is the
+   middleman, so a man who is barely yours is exactly the man who keeps it —
+   and this number is written on the button before it is pressed, the same rule
+   the treasury screen already follows for the leak. */
+function bribeLostChance(S) {
+  var b = ARMY.bribe, gap = Math.max(0, armyLine(S) - army(S));
+  return Math.min(b.lost_max_pct, b.lost_base_pct + gap * b.lost_per_point_below_line);
+}
+
+function bribeRefusal(S) {
+  var b = ARMY.bribe, since = S.totalMonths - S.lastBribe;
+  if (S.ap < b.ap_cost) return 'محتاج ' + b.ap_cost + ' طاقة قرارات';
+  if (S.personal < b.cost) return 'رصيدك الشخصي ناقص ' + Math.ceil(b.cost - S.personal) + 'م';
+  if (since < b.once_per_months) {
+    return 'دفعت من ' + since + ' شهر — استنى ' + (b.once_per_months - since) + ' كمان';
+  }
+  return null;
+}
+
+/* Returns { ok, lost, gain } or a refusal string. The roll comes from the seed
+   and the month, so leaving the screen and coming back cannot reroll it. */
+function bribeArmy(S) {
+  var refusal = bribeRefusal(S);
+  if (refusal) return refusal;
+  var b = ARMY.bribe;
+  var roll = rngFrom(hashStr(S.seed + '|bribe|' + S.totalMonths))();
+  var lost = roll * 100 < bribeLostChance(S);
+
+  S.ap -= b.ap_cost;
+  S.personal -= b.cost;
+  S.lastBribe = S.totalMonths;
+  // Money that leaves your pocket for the officers gets noticed either way.
+  addHeat(S, b.heat);
+
+  var gain = lost ? b.lost_loyalty_gain : b.loyalty_gain;
+  S.ministers.defence.loyalty = clamp(army(S) + gain);
+  return { ok: true, lost: lost, gain: gain };
+}
+
+/* --------------------------------------------------------------- suspicion */
+
+/* Where this month's suspicion comes from, as separate numbers rather than one
+   total. The design rule of the whole project is that no number reaches the
+   player without a visible reason, and "your suspicion went up 3" is not a
+   reason — "four ministers are talking and your media man is asleep" is. The
+   screen reads exactly this, so the breakdown it shows can never drift from the
+   arithmetic that actually ran. */
+function heatSources(S) {
+  var h = BALANCE.heat, talk = 0, who = 0, i;
+  for (i = 0; i < POST_IDS.length; i++) {
+    var loy = S.ministers[POST_IDS[i]].loyalty;
+    if (loy < h.disloyal_floor) { talk += (h.disloyal_floor - loy) * h.disloyal_coef; who++; }
+  }
+  // The media minister's one job in the game. Measured on what he actually
+  // delivers, not his raw competence, so a man appointed last month cannot bury
+  // a scandal on his first day.
+  var media = Math.max(0, ministerComp(S, 'media') - h.media_floor) * h.media_coef;
+  return { talk: talk, talkers: who, media: media, decay: h.monthly_decay };
+}
+
+function heatChange(S) {
+  var s = heatSources(S);
+  return s.talk - s.media - s.decay;
+}
+
+/* Every one-off add goes through here so the cap is applied in one place. A
+   second `S.heat +=` anywhere else is how a capped number stops being capped. */
+function addHeat(S, n) {
+  S.heat = Math.max(0, Math.min(BALANCE.heat.cap, S.heat + n));
+}
+
+/* ----------------------------------------------------------- situations */
+
+/* Everything a situation is allowed to LOOK at. Two rules make this list the
+   whole interface: a condition naming anything else fails the build, and every
+   probe is a number the player can already find on some screen — so a situation
+   can never fire "because of" something invisible to him. */
+var PROBES = {
+  approval:       function (S) { return S.approval; },
+  stability:      function (S) { return S.stability; },
+  inflation:      function (S) { return S.inflation; },
+  treasury:       function (S) { return S.treasury; },
+  personal:       function (S) { return S.personal; },
+  stolenTotal:    function (S) { return S.stolenTotal; },
+  foodPrice:      function (S) { return S.foodPrice; },
+  boil:           function (S) { return S.boil; },
+  heat:           function (S) { return S.heat; },
+  army:           function (S) { return army(S); },
+  coupRisk:       function (S) { return S.coupRisk; },
+  tax:            function (S) { return S.tax; },
+  subsidy:        function (S) { return S.subsidy; },
+  months:         function (S) { return S.totalMonths; },
+  backing:        function (S) { return parliamentBacking(S); },
+  avgLoyalty:     function (S) { return avgLoyalty(S); },
+  avgCompetence:  function (S) { return avgCompetence(S); },
+  avgService:     function (S) { return avgService(S); },
+  bankIndependence: function (S) { return S.bank.independence; }
+};
+
+/* A probe name may also be "service.<id>", "gov.<id>" or
+   "minister.<post>.loyalty|competence". Resolved here so the data can talk
+   about any service, province or minister without listing them all. */
+function probe(S, key) {
+  if (PROBES[key]) return PROBES[key](S);
+  var bits = key.split('.');
+  if (bits[0] === 'service' && BALANCE.services[bits[1]]) return nationalLevel(S, bits[1]);
+  if (bits[0] === 'gov' && BALANCE.governorates[bits[1]]) return S.govAppr[bits[1]];
+  if (bits[0] === 'minister' && S.ministers[bits[1]]) {
+    return bits[2] === 'competence' ? S.ministers[bits[1]].competence
+                                    : S.ministers[bits[1]].loyalty;
+  }
+  return null;                       // unknown — check.py refuses to build
+}
+
+function probeExists(S, key) { return probe(S, key) !== null; }
+
+function conditionHolds(S, c) {
+  var v = probe(S, c[0]);
+  if (v === null) return false;
+  if (c[1] === '<') return v < c[2];
+  if (c[1] === '>') return v > c[2];
+  if (c[1] === '<=') return v <= c[2];
+  if (c[1] === '>=') return v >= c[2];
+  if (c[1] === '==') return v === c[2];
+  return false;
+}
+
+/* Everything a choice is allowed to CHANGE. Same deal in reverse: an effect
+   naming anything else fails the build, so a choice can never silently do
+   nothing — which for a card the player paid AP for is the worst outcome. */
+var EFFECTS = {
+  approval:  function (S, n) { S.approval = clamp(S.approval + n);
+                               for (var i = 0; i < GOV_IDS.length; i++)
+                                 S.govAppr[GOV_IDS[i]] = clamp(S.govAppr[GOV_IDS[i]] + n); },
+  stability: function (S, n) { S.stability = clamp(S.stability + n); },
+  boil:      function (S, n) { S.boil = Math.max(0, S.boil + n); },
+  heat:      function (S, n) { addHeat(S, n); },
+  army:      function (S, n) { S.ministers.defence.loyalty = clamp(army(S) + n); },
+  coupRisk:  function (S, n) { S.coupRisk = Math.max(0, Math.min(ARMY.risk_cap, S.coupRisk + n)); },
+  treasury:  function (S, n) { S.treasury += n; },
+  personal:  function (S, n) { S.personal = Math.max(0, S.personal + n); },
+  inflation: function (S, n) { S.inflation = Math.max(0, S.inflation + n); },
+  tax:       function (S, n) { S.tax = clamp(S.tax + n, BALANCE.levers.tax.min, BALANCE.levers.tax.max); },
+  subsidy:   function (S, n) { S.subsidy = clamp(S.subsidy + n, BALANCE.levers.subsidy.min,
+                                                 BALANCE.levers.subsidy.max); },
+  foodPrice: function (S, n) { S.foodPrice = clamp(S.foodPrice + n); },
+  ap:        function (S, n) { S.ap = Math.max(0, S.ap + n); },
+  // Whole-cabinet nudges: the situations that involve "the government" rather
+  // than one man.
+  cabinetLoyalty:    function (S, n) { for (var i = 0; i < POST_IDS.length; i++)
+                                         S.ministers[POST_IDS[i]].loyalty = clamp(S.ministers[POST_IDS[i]].loyalty + n); },
+  cabinetCompetence: function (S, n) { for (var i = 0; i < POST_IDS.length; i++)
+                                         S.ministers[POST_IDS[i]].competence = clamp(S.ministers[POST_IDS[i]].competence + n); },
+  allPct:    function (S, n) { for (var i = 0; i < SERVICE_IDS.length; i++)
+                                 S.pct[SERVICE_IDS[i]] = clamp(S.pct[SERVICE_IDS[i]] + n, 0, 160); },
+  // Printing straight from a card, through the bank's own rule so the governor
+  // and the inflation cost still apply.
+  printCap:  function (S) { var was = S.bank.lastPrint;
+                            S.bank.lastPrint = -BANK.print.once_per_months;
+                            var why = printMoney(S, printCap(S));
+                            if (why) S.bank.lastPrint = was; }
+};
+
+/* "pct.<service>", "build.<service>.<gov>" and "minister.<post>.loyalty" are
+   resolved the same way conditions are. */
+function applyEffect(S, key, n) {
+  if (EFFECTS[key]) { EFFECTS[key](S, n); return true; }
+  var bits = key.split('.');
+  if (bits[0] === 'pct' && BALANCE.services[bits[1]]) {
+    S.pct[bits[1]] = clamp(S.pct[bits[1]] + n, 0, 160); return true;
+  }
+  if (bits[0] === 'build' && BALANCE.services[bits[1]] && BALANCE.governorates[bits[2]]) {
+    S.fac[bits[2]][bits[1]] += n;
+    S.ask[bits[1]] += BALANCE.services[bits[1]].adds_monthly * n;
+    return true;
+  }
+  if (bits[0] === 'minister' && S.ministers[bits[1]]) {
+    var f = bits[2] === 'competence' ? 'competence' : 'loyalty';
+    S.ministers[bits[1]][f] = clamp(S.ministers[bits[1]][f] + n);
+    return true;
+  }
+  return false;                      // unknown — check.py refuses to build
+}
+
+function situationById(id) {
+  for (var i = 0; i < SITUATIONS.situations.length; i++) {
+    if (SITUATIONS.situations[i].id === id) return SITUATIONS.situations[i];
+  }
+  return null;
+}
+
+/* Has this one fired recently enough that it should stay quiet? */
+function onCooldown(S, sit) {
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if (S.sitHistory[i].id === sit.id
+      && S.totalMonths - S.sitHistory[i].month < sit.cooldown_months) return true;
+  }
+  return false;
+}
+
+/* A scandal is an ordinary situation carrying kind:"scandal". It gets no new
+   machinery — the same conditions, the same choices, the same "time stops and
+   there is no way out" — because everything already built and tested for
+   situations is exactly what a scandal needs. What it gets is its own rate gate
+   and first refusal, and that is the whole difference. */
+function kindOf(sit) { return sit.kind || 'situation'; }
+
+function rateFor(kind) {
+  return kind === 'scandal' ? SITUATIONS.scandal_rate : SITUATIONS.rate;
+}
+
+function situationsThisYear(S, kind) {
+  var n = 0;
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if (kind && (S.sitHistory[i].kind || 'situation') !== kind) continue;
+    if (S.totalMonths - S.sitHistory[i].month < 12) n++;
+  }
+  return n;
+}
+
+/* The month the last one of this kind was answered. Derived from the history
+   rather than kept in its own field: a second copy of the same fact is a second
+   thing to forget to update, and forgetting this one would silently remove the
+   only limit on how often the game interrupts. */
+function lastOfKind(S, kind) {
+  var m = 0;
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if ((S.sitHistory[i].kind || 'situation') !== kind) continue;
+    if (S.sitHistory[i].month > m) m = S.sitHistory[i].month;
+  }
+  return m;
+}
+
+/* The gate. The player asked for every situation to stop the clock, so how
+   OFTEN one may fire is the only thing keeping the game from nagging — which
+   makes these numbers the most important ones in the file. Scandals count
+   separately, so a bad year of ordinary crises cannot swallow the consequence
+   of being corrupt; check.py refuses to build if the two gates together let
+   through more interruptions than a year can carry. */
+function situationAllowed(S, kind) {
+  var r = rateFor(kind);
+  if (S.pendingSituation) return false;
+  if (S.totalMonths < r.quiet_months_at_start) return false;
+  if (S.totalMonths - lastOfKind(S, kind) < r.min_gap_months) return false;
+  if (situationsThisYear(S, kind) >= r.max_per_year) return false;
+  return true;
+}
+
+/* Picks one of a kind, deterministically from the seed and the month. Weighted,
+   and only from the ones whose conditions actually hold right now. */
+function pickOfKind(S, kind) {
+  if (!situationAllowed(S, kind)) return null;
+  var rnd = rngFrom(hashStr(S.seed + '|' + kind + '|' + S.totalMonths));
+  if (rnd() > rateFor(kind).chance_per_month) return null;
+
+  var pool = [], total = 0, i, j;
+  for (i = 0; i < SITUATIONS.situations.length; i++) {
+    var sit = SITUATIONS.situations[i];
+    if (kindOf(sit) !== kind) continue;
+    if (onCooldown(S, sit)) continue;
+    var ok = true;
+    for (j = 0; j < sit.when.length; j++) {
+      if (!conditionHolds(S, sit.when[j])) { ok = false; break; }
+    }
+    if (!ok) continue;
+    pool.push(sit);
+    total += sit.weight;
+  }
+  if (!pool.length) return null;
+
+  var roll = rnd() * total;
+  for (i = 0; i < pool.length; i++) {
+    roll -= pool[i].weight;
+    if (roll <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+/* Scandals first. A president whose suspicion is over the line should hear
+   about that before he hears about the water, or the number stops meaning
+   anything. */
+function pickSituation(S) {
+  return pickOfKind(S, 'scandal') || pickOfKind(S, 'situation');
+}
+
+/* Why a choice cannot be taken, or null. The screen shows this instead of the
+   price, so a locked option always says what is missing. */
+function choiceRefusal(S, sit, index) {
+  var ch = sit.choices[index];
+  if (!ch) return 'الاختيار ده مش موجود';
+  // Every shortfall, not just the first one. A choice that needs both energy
+  // and money used to name only the energy — so the player spends a month
+  // getting it, comes back, and is refused again for a reason he was never
+  // told. One trip, one full answer.
+  var c = ch.cost || {}, missing = [];
+  if (c.ap && S.ap < c.ap) missing.push('ناقصك ' + (c.ap - S.ap) + ' طاقة');
+  if (c.treasury && S.treasury < c.treasury) missing.push('ناقص الخزينة ' + Math.ceil(c.treasury - S.treasury) + 'م');
+  if (c.personal && S.personal < c.personal) missing.push('ناقص رصيدك ' + Math.ceil(c.personal - S.personal) + 'م');
+  return missing.length ? missing.join(' · ') : null;
+}
+
+/* Answering. Returns null, or the reason it was refused — and a refused answer
+   changes nothing at all, including the pending situation. */
+function answerSituation(S, index) {
+  if (!S.pendingSituation) return 'مفيش موقف مفتوح';
+  var sit = situationById(S.pendingSituation);
+  if (!sit) return 'الموقف ده مش موجود';
+  var refusal = choiceRefusal(S, sit, index);
+  if (refusal) return refusal;
+
+  var ch = sit.choices[index], c = ch.cost || {}, k;
+  if (c.ap) S.ap -= c.ap;
+  if (c.treasury) S.treasury -= c.treasury;
+  if (c.personal) S.personal -= c.personal;
+  for (k in ch.effects) applyEffect(S, k, ch.effects[k]);
+
+  S.sitHistory.push({ id: sit.id, kind: kindOf(sit), month: S.totalMonths,
+                      choice: index, nm: ch.nm });
+  S.pendingSituation = null;
+  return null;
+}
+
 /* ------------------------------------------------------------- the pieces */
 
 function updateServices(S, deficit) {
@@ -495,6 +987,10 @@ function updateMood(S) {
 function tickMonth(S) {
   var events = [];
   if (S.dead) return events;
+  // A pending decision freezes the world. Without this the clock would keep
+  // running behind the card and the player would answer a month that is no
+  // longer the month he was shown.
+  if (S.pendingSituation) return events;
 
   var nf = BALANCE.inflation, fd = BALANCE.food, inc = BALANCE.income, st = BALANCE.stability;
 
@@ -555,6 +1051,23 @@ function tickMonth(S) {
   updateServices(S, deficit);
   updateMood(S);
 
+  // 9b. suspicion, before stability so the stability line reads this month's
+  // value rather than last month's.
+  addHeat(S, heatChange(S));
+
+  // 9c. the army. Same order and the same reason: stability must read the risk
+  // as it stands this month, not as it stood last month.
+  var riskBefore = S.coupRisk;
+  S.coupRisk = Math.max(0, Math.min(ARMY.risk_cap, S.coupRisk + coupRiskChange(S)));
+  // Told at every quarter, so the ending can never arrive from a number the
+  // player was never shown. Same rule the boil already follows.
+  var rstep = ARMY.risk_cap / ARMY.warn_steps;
+  if (Math.floor(S.coupRisk / rstep) > Math.floor(riskBefore / rstep)
+    && S.coupRisk < ARMY.risk_cap) {
+    events.push({ type: 'army', pct: Math.round(S.coupRisk / ARMY.risk_cap * 100),
+                  loyalty: Math.round(army(S)) });
+  }
+
   // 10-11. stability
   var inflPain = pains(S).inflation;
   var opposition = Math.max(0, st.opposition_threshold - S.approval) * st.opposition_coef;
@@ -564,8 +1077,16 @@ function tickMonth(S) {
   // picture of four parties.
   var bk = PARLIAMENT.backing;
   var noBacking = Math.max(0, bk.floor - parliamentBacking(S)) * bk.stability_coef;
+  // A president under suspicion is a weaker president every single month, not
+  // only on the day the scandal lands. Without this, suspicion would be inert
+  // between scandals and the player would have no reason to watch it.
+  var suspicion = S.heat * BALANCE.heat.stability_coef;
+  // An army that is not yours makes the state wobble every month, not only on
+  // the day it moves. Without this the risk would be inert until the ending,
+  // and a player could ignore it for years at no cost.
+  var barracks = S.coupRisk * ARMY.stability_coef;
   var stTarget = clamp(st.base - opposition - inflPain * st.inflation_coef
-    - disloyal - noBacking);
+    - disloyal - noBacking - suspicion - barracks);
   S.stability += (stTarget - S.stability) * st.smoothing;
 
   // 14. the boil, and the two endings
@@ -580,7 +1101,12 @@ function tickMonth(S) {
   } else {
     S.boil = Math.max(0, S.boil - md.boil_cooldown);
   }
-  if (S.boil >= md.boil_cap) {
+  if (S.coupRisk >= ARMY.risk_cap) {
+    // Checked before the street and before the economy: when the army moves it
+    // does not wait for either of them.
+    S.dead = 'coup';
+    events.push({ type: 'end', reason: 'coup', minister: S.ministers.defence.name });
+  } else if (S.boil >= md.boil_cap) {
     S.dead = 'riot';
     events.push({ type: 'end', reason: 'riot', gov: worstGovernorate(S) });
   } else if (S.inflation >= nf.collapse_at) {
@@ -600,6 +1126,13 @@ function tickMonth(S) {
   for (var q = 0; q < POST_IDS.length; q++) S.ministers[POST_IDS[q]].months += 1;
   S.ap = S.apMax;
   S.stoleThisMonth = false;
+
+  // Last of all, so a situation reads the month the player is about to see.
+  var sit = pickSituation(S);
+  if (sit) {
+    S.pendingSituation = sit.id;
+    events.push({ type: 'situation', id: sit.id });
+  }
 
   // Keep the arithmetic so the screens can show the player where a number came
   // from. Rule of the design doc: no number without a visible reason.
@@ -669,9 +1202,15 @@ function stealFromTreasury(S, amount) {
 
   S.treasury -= amount;
   S.personal += amount;
+  S.stolenTotal += amount;
   S.stoleThisMonth = true;
+  // Suspicion rises whether or not he talks. Only tying it to the leak would
+  // mean a lucky thief is an invisible one, and then the honest way to play is
+  // to steal constantly and hope.
+  addHeat(S, amount / 100 * BALANCE.heat.steal_per_100m);
 
   if (roll * 100 < chance) {
+    addHeat(S, BALANCE.heat.leak_extra);
     S.approval = clamp(S.approval - c.approval_hit);
     S.stability = clamp(S.stability - c.stability_hit);
     for (var i = 0; i < GOV_IDS.length; i++) {
@@ -723,6 +1262,10 @@ function printMoney(S, millions) {
   if (refusal) return refusal;
   S.treasury += millions * S.priceIndex;
   S.inflation += printInflation(S, millions);
+  // Legal on paper, and still something people ask about. Cheaper than stealing
+  // per pound on purpose: if printing cost the same suspicion, nobody would ever
+  // steal and half the treasury screen would be dead content.
+  addHeat(S, millions / 100 * BALANCE.heat.print_per_100m);
   S.bank.lastPrint = S.totalMonths;
   return null;
 }
@@ -751,6 +1294,9 @@ function swapGovernor(S) {
   var names = MINISTERS.candidate_names;
   S.ap -= sw.ap_cost;
   S.stability = clamp(S.stability - sw.stability_hit);
+  // Putting your own man over the money is the move that looks worst from
+  // outside, whatever you do with him afterwards.
+  addHeat(S, BALANCE.heat.governor_swap);
   S.bank = {
     name: names[Math.floor(rnd() * names.length)],
     independence: Math.round(sw.new_independence[0]

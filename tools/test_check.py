@@ -8,7 +8,7 @@ tools/check.py notices. If someone weakens a check later, this goes red.
 
 Every new check added to check.py should get a deliberate breakage here.
 """
-import json, os, shutil, subprocess, sys, tempfile
+import json, os, re, shutil, subprocess, sys, tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -37,17 +37,21 @@ TEXT_CASES = [
      lambda s: s.replace("tasks.register('copyGame', Copy) {", "tasks.register('unused', Copy) {")),
     ("نسخ اللعبة مش مربوط بالبناء", "android/app/build.gradle",
      lambda s: s.replace("dependsOn 'copyGame'", "// unlinked")),
+    ("اسم الجسر في الجافا مش زي اللي اللعبة بتنده عليه",
+     "android/app/src/main/java/com/karim/thegame/MainActivity.java",
+     lambda s: s.replace('new Bridge(), "TheGame"', 'new Bridge(), "TheGameX"')),
+    ("دالة الجسر مش عليها الوسم اللي بيخليها تتشاف",
+     "android/app/src/main/java/com/karim/thegame/MainActivity.java",
+     lambda s: s.replace("@JavascriptInterface\n        public void exitApp()",
+                         "public void exitApp()")),
+    ("الجسر اتشال من التطبيق واللعبة لسه بتنده عليه",
+     "android/app/src/main/java/com/karim/thegame/MainActivity.java",
+     lambda s: s.replace('web.addJavascriptInterface(new Bridge(), "TheGame");', "")),
     ("زرار الرجوع بينده على دالة مش موجودة", "game/src/ui.js",
      lambda s: s.replace("function onAndroidBack()", "function onAndroidBackX()")),
     # The bug that turned CI red while everything was green here: the fake
     # browser stopped supplying a global the game uses, and the test only
     # survived because the Node on this machine happened to have it.
-    ("المتصفح المزيّف ناقصه navigator", "tools/test_game.js",
-     lambda s: s.replace(
-         "global.navigator = { serviceWorker: { register: () => Promise.resolve() } };", "")),
-    ("المتصفح المزيّف ناقصه location", "tools/test_game.js",
-     lambda s: s.replace(
-         "global.location = { protocol: 'file:', href: 'file:///game/index.html' };", "")),
 ]
 
 # These change a game source and rebuild first, so the bundle is valid but the
@@ -72,7 +76,8 @@ REBUILD_CASES = [
      lambda s: s.replace("return clamp(S.approval + (blocFeel(S, b) - mean));",
                          "return clamp(blocFeel(S, b));")),
     ("المجلس اتشال من حساب الثبات", "game/src/engine.js",
-     lambda s: s.replace("    - disloyal - noBacking);", "    - disloyal);")),
+     lambda s: s.replace("    - disloyal - noBacking - suspicion - barracks);",
+                         "    - disloyal - suspicion - barracks);")),
     ("التعديل الوزاري بيشيل محافظ البنك", "game/src/engine.js",
      lambda s: s.replace("  S.bank = {\n    name: names[Math.floor(rnd() * names.length)],",
                          "  S.bank = {\n    name: S.bank.name,")),
@@ -83,6 +88,50 @@ REBUILD_CASES = [
                          "  return String(s);")),
     ("طباعة الفلوس من غير تضخم", "game/src/engine.js",
      lambda s: s.replace("  S.inflation += printInflation(S, millions);", "")),
+    ("الشبهة بتتزوّد من غير سقف", "game/src/engine.js",
+     lambda t: t.replace("  addHeat(S, amount / 100 * BALANCE.heat.steal_per_100m);",
+                         "  S.heat += amount / 100 * BALANCE.heat.steal_per_100m;")),
+    ("السرقة بطّلت تزوّد الشبهة", "game/src/engine.js",
+     lambda t: t.replace("  addHeat(S, amount / 100 * BALANCE.heat.steal_per_100m);", "")),
+    ("الشبهة بطّلت تأثر على الثبات", "game/src/engine.js",
+     lambda t: t.replace("    - disloyal - noBacking - suspicion - barracks);",
+                         "    - disloyal - noBacking - barracks);")),
+    ("الفضايح بقت تتحسب مع المواقف في نفس البوابة", "game/src/engine.js",
+     lambda t: t.replace("function pickSituation(S) {\n  return pickOfKind(S, 'scandal') || pickOfKind(S, 'situation');",
+                         "function pickSituation(S) {\n  return pickOfKind(S, 'situation');")),
+    ("مجموع اللي اتسرق بطّل يتسجّل", "game/src/engine.js",
+     lambda t: t.replace("  S.stolenTotal += amount;", "")),
+    ("تفكيك الشبهة على الشاشة مش هو الحساب الحقيقي", "game/src/engine.js",
+     lambda t: t.replace("  return s.talk - s.media - s.decay;",
+                         "  return s.talk - s.media * 2 - s.decay;")),
+    ("القمع مش بيتخصم من الخزينة", "game/src/engine.js",
+     lambda t: t.replace("  S.treasury -= c.treasury;\n  S.lastCrackdown = S.totalMonths;",
+                         "  S.lastCrackdown = S.totalMonths;")),
+    ("نظام الحكم بطّل يأثر على نجاح القمع", "game/src/engine.js",
+     lambda t: t.replace(" * c.per_competence_point + gov;", " * c.per_competence_point;")),
+    ("خطر الانقلاب بيتزوّد من غير سقف", "game/src/engine.js",
+     lambda t: t.replace("  S.coupRisk = Math.max(0, Math.min(ARMY.risk_cap, S.coupRisk + coupRiskChange(S)));",
+                         "  S.coupRisk += coupRiskChange(S);")),
+    ("الجيش بطّل يأثر على الثبات", "game/src/engine.js",
+     lambda t: t.replace("    - disloyal - noBacking - suspicion - barracks);",
+                         "    - disloyal - noBacking - suspicion);")),
+    ("الانقلاب بيحصل من غير تنبيه", "game/src/engine.js",
+     lambda t: t.replace("    events.push({ type: 'army', pct: Math.round(S.coupRisk / ARMY.risk_cap * 100),\n                  loyalty: Math.round(army(S)) });", "")),
+    ("الرشوة مش بتتخصم من الرصيد الشخصي", "game/src/engine.js",
+     lambda t: t.replace("  S.personal -= b.cost;\n", "")),
+    ("التحميل بطّل يقارن بصمة البناء", "game/src/engine.js",
+     lambda t: t.replace("  if (blob.build !== BUILD) return 'الحفظ ده اتعمل بنسخة تانية من اللعبة';", "")),
+    ("التحميل بطّل يقارن إصدار الحفظ", "game/src/engine.js",
+     lambda t: t.replace("if (!blob || blob.v !== SAVE_VERSION)", "if (!blob)")),
+    ("السجل بطّل يبقى ليه حد", "game/src/engine.js",
+     lambda t: t.replace("  if (S.log.length > LOG_KEEP) S.log.splice(0, S.log.length - LOG_KEEP);", "")),
+    ("الحفظ بطّل يتأكد إن الوزرا كلهم موجودين", "game/src/engine.js",
+     lambda t: t.replace("    if (!S.ministers || !S.ministers[POST_IDS[i]]) return 'الحفظ ناقصه وزير';", "")),
+    ("مكان كارت الموقف اتشال من الصفحة", "game/src/index.html",
+     lambda s: s.replace('id="sit"', 'id="sitX"', 1)),
+    ("الصفحة بتطلب ملف مش موجود", "game/src/index.html",
+     lambda s: s.replace('<meta charset="utf-8">',
+                         '<meta charset="utf-8">\n<link rel="icon" href="icon-192.png">', 1)),
     ("رئيس الوزراء بيتغيّر في تعديله هو", "game/src/engine.js",
      lambda s: s.replace("    if (post === 'pm') continue;                    // he is the one doing this", "")),
     ("التعديل الوزاري ما بياخدش طاقة", "game/src/engine.js",
@@ -111,9 +160,11 @@ REBUILD_CASES = [
     ("رسمة تاب اتشالت", "game/src/art.js", lambda s: s.replace("  pol: '<svg", "  polX: '<svg", 1)),
     ("تدرّج لوني مالوش تعريف", "game/src/art.js",
      lambda s: s.replace('id="fade-down"', 'id="fade-gone"', 1)),
+    # Matched by pattern, not by the exact number: this case went dead once when
+    # the tribal modifier was retuned, and a breakage that quietly stops
+    # breaking anything is worse than no breakage at all.
     ("تركيبة بقت فخ — كفاءة واطية أوي", "tools/build_setup_mockup.py",
-     lambda s: s.replace('"mods": {"loyalty": +15, "competence": -6},',
-                         '"mods": {"loyalty": +15, "competence": -40},')),
+     lambda s: re.sub(r'("loyalty": \+15, "competence": )-\d+', r'\g<1>-40', s)),
 ]
 
 JSON_CASES = [
@@ -146,6 +197,87 @@ JSON_CASES = [
      lambda d: d["levers"]["tax"].__setitem__("min", 30)),
     ("خطوة المقبض كبيرة أوي", "data/balance.json",
      lambda d: d["levers"]["subsidy"].__setitem__("step", 200)),
+    ("موقف شرطه على حاجة مش موجودة", "data/situations.json",
+     lambda d: d["situations"][0]["when"].__setitem__(0, ["weather", "<", 5])),
+    ("اختيار بيغيّر حاجة مش موجودة", "data/situations.json",
+     lambda d: d["situations"][0]["choices"][0]["effects"].__setitem__("morale", 5)),
+    ("موقف كل اختياراته ليها تمن", "data/situations.json",
+     lambda d: [c.__setitem__("cost", {"ap": 1}) for c in d["situations"][0]["choices"]]),
+    ("موقف فيه اختيار واحد", "data/situations.json",
+     lambda d: d["situations"][0].__setitem__("choices", d["situations"][0]["choices"][:1])),
+    ("المواقف ممكن تيجي ورا بعض", "data/situations.json",
+     lambda d: d["rate"].__setitem__("min_gap_months", 1)),
+    ("مواقف كتير أوي في السنة", "data/situations.json",
+     lambda d: d["rate"].__setitem__("max_per_year", 12)),
+    ("موقف وزنه صفر", "data/situations.json",
+     lambda d: d["situations"][0].__setitem__("weight", 0)),
+    # ---- الشبهة والفضايح
+    ("فضيحة شرطها مش على الشبهة", "data/situations.json",
+     lambda d: [x for x in d["situations"] if x.get("kind") == "scandal"][0]
+        .__setitem__("when", [["approval", "<", 40]])),
+    ("فضيحة عايزة شبهة فوق السقف", "data/situations.json",
+     lambda d: [x for x in d["situations"] if x.get("kind") == "scandal"][0]
+        .__setitem__("when", [["heat", ">", 400]])),
+    ("كل الفضايح فوق الخط المعلن", "data/situations.json",
+     lambda d: [x.__setitem__("when", [["heat", ">", 95]])
+                for x in d["situations"] if x.get("kind") == "scandal"]),
+    ("مفيش بوابة معدّل للفضايح", "data/situations.json",
+     lambda d: d.pop("scandal_rate")),
+    ("الفضايح والمواقف مع بعض بيقاطعوا كتير أوي", "data/situations.json",
+     lambda d: d["scandal_rate"].__setitem__("max_per_year", 5)),
+    ("الفضايح بتيجي ورا بعض أسرع من المواقف", "data/situations.json",
+     lambda d: d["scandal_rate"].__setitem__("min_gap_months", 2)),
+    ("مفيش ولا فضيحة شرطها إن اللاعب سرق", "data/situations.json",
+     lambda d: [x.__setitem__("when", [c for c in x["when"] if c[0] != "stolenTotal"])
+                for x in d["situations"] if x.get("kind") == "scandal"]),
+    ("الشبهة مبتنزلش لوحدها", "data/balance.json",
+     lambda d: d["heat"].__setitem__("monthly_decay", 0)),
+    ("الشبهة بتعلى لوحدها مهما عملت", "data/balance.json",
+     lambda d: d["heat"].__setitem__("disloyal_coef", 0.9)),
+    ("وزير إعلام واحد بيلغي كل حاجة", "data/balance.json",
+     lambda d: d["heat"].__setitem__("media_coef", 2.0)),
+    ("خط الفضيحة فوق السقف", "data/balance.json",
+     lambda d: d["heat"].__setitem__("scandal_at", 140)),
+    ("السرقة شبهتها أقل من طباعة الفلوس", "data/balance.json",
+     lambda d: d["heat"].__setitem__("steal_per_100m", 0.5)),
+    # ---- القمع
+    ("القمع الفاشل مش بيزوّد الغليان", "data/crackdown.json",
+     lambda d: d["fail"].__setitem__("boil", 0)),
+    ("القمع الفاشل تمنه زي الناجح", "data/crackdown.json",
+     lambda d: d["fail"].__setitem__("approval", d["win"]["approval"])),
+    ("القمع الناجح مش بينزّل الغليان", "data/crackdown.json",
+     lambda d: d["win"].__setitem__("boil", 0)),
+    ("ينفع تقمع شارع هادي", "data/crackdown.json",
+     lambda d: d.__setitem__("boil_floor", 0)),
+    ("ينفع تقمع كل شهر", "data/crackdown.json",
+     lambda d: d["cost"].__setitem__("once_per_months", 0)),
+    ("القمع بينجح بنفس النسبة في كل الأنظمة", "data/crackdown.json",
+     lambda d: d.__setitem__("success_by_government",
+                             {k: 0 for k in d["success_by_government"]})),
+    ("القمع مش بينجح عند الديكتاتوري أكتر", "data/crackdown.json",
+     lambda d: d["success_by_government"].__setitem__("dictator", -20)),
+    ("القمع مضمون حتى مع أسوأ وزير داخلية", "data/crackdown.json",
+     lambda d: d["success"].__setitem__("min_pct", 80)),
+    # ---- الجيش
+    ("خطر الانقلاب مبينزلش أبدًا", "data/army.json",
+     lambda d: d.__setitem__("risk_decay_above", 0)),
+    ("الجيش بينقلب بعد شهرين من الإهمال", "data/army.json",
+     lambda d: d.__setitem__("risk_per_point_below", 4.5)),
+    ("إهمال الجيش عمره ما بيوصل لانقلاب", "data/army.json",
+     lambda d: d.__setitem__("risk_per_point_below", 0.01)),
+    ("الرشوة مش بترفع ولاء حد", "data/army.json",
+     lambda d: d["bribe"].__setitem__("loyalty_gain", 0)),
+    ("الرشوة ببلاش", "data/army.json",
+     lambda d: d["bribe"].__setitem__("cost", 0)),
+    ("ضياع الرشوة مالوش أي معنى", "data/army.json",
+     lambda d: d["bribe"].__setitem__("lost_loyalty_gain", d["bribe"]["loyalty_gain"])),
+    ("الرشوة ممكن تضيع ١٠٠٪", "data/army.json",
+     lambda d: d["bribe"].__setitem__("lost_max_pct", 100)),
+    ("ينفع تدفع للجيش كل شهر", "data/army.json",
+     lambda d: d["bribe"].__setitem__("once_per_months", 0)),
+    ("وصف الوزير بيقول كفاءته بتعمل حاجة والمحرك مش بيقراها", "data/ministers.json",
+     lambda d: [p.__setitem__("note", "كفاءته بتحمي البلد من الغزو")
+                for p in d["posts"] if p["id"] == "defence"]),
     ("مقاعد الأحزاب مش ١٠٠", "data/parliament.json",
      lambda d: d["parties"][0].__setitem__("seats", 50)),
     ("أوزان حزب مش بتجمع ١", "data/parliament.json",
@@ -234,7 +366,7 @@ MINISTER_CASES = [
      "اسمين وزرا متكررين"),
     ("المقايضة كفاءة/ولاء اتشالت",
      lambda d: d["dismiss"].__setitem__("loy_tradeoff_coef", 0),
-     "المقايضة اللي اللعبة قايمة عليها مش موجودة"),
+     "كفء وموالي في نفس الوقت"),
     ("الوزير الجديد بيشتغل بكامل كفاءته فورًا",
      lambda d: d["settling"].__setitem__("start_factor", 1.0),
      "بيشتغل بكامل كفاءته فورًا"),
@@ -247,11 +379,50 @@ MINISTER_CASES = [
 # The shell and the back button. Same rule as the ministers cases: any edit to
 # ui.js also trips the "generated file edited by hand" check, so these rebuild
 # first and each names the sentence it must see.
+def paste_a_function_twice(src):
+    """The real accident, reproduced: a whole function pasted in a second time
+    under another name. Derived from the file instead of written out here, so
+    the case cannot go stale the way a hand-copied block would."""
+    i = src.index("function coupCard() {")
+    j = src.index("\n}\n", i) + 3
+    twin = src[i:j].replace("function coupCard()", "function coupCardTwin()", 1)
+    return src[:i] + twin + "\n" + src[i:]
+
+
+def hide_the_failure_case(src):
+    """The button that advertises only its good outcome. Written as a function
+    because the row is three lines of string concatenation and a hand-copied
+    copy of it here would go stale the first time the wording changed."""
+    start = src.index("    + '<div class=\"cr2\"><span>\u0644\u0648 \u0641\u0634\u0644</span>")
+    end = src.index("\n", src.index("ar(c.fail.heat)", start))
+    return src[:start] + "    + ''" + src[end:]
+
+
+def drop_click(name):
+    """Removes one entry from the click handler's list of known attributes,
+    wherever it sits in it. Written as a regex rather than a literal line
+    because the list is re-wrapped every time a button is added, and a literal
+    copy of it here goes stale — silently, since a case that matches nothing
+    stops testing anything."""
+    def go(src):
+        out = re.sub(r"'" + name + r"',\s*", "", src, count=1)
+        if out == src:
+            out = re.sub(r",\s*'" + name + r"'", "", src, count=1)
+        return out
+    return go
+
+
+def drop_from_draw_game(src):
+    """Takes drawSituation() out of drawGame, however drawGame is laid out."""
+    i = src.index("function drawGame()")
+    j = src.index("\n}", i)
+    return src[:i] + src[i:j].replace("drawSituation();", "", 1) + src[j:]
+
+
 UI_CASES = [
-    ("عامل الخدمة اتكرر تاني",
-     lambda s: s.replace("  navigator.serviceWorker.register('sw.js').catch(function () {});",
-                         "  navigator.serviceWorker.register('sw.js').catch(function () {});\n"
-                         "  navigator.serviceWorker.register('sw.js').catch(function () {});", 1),
+    ("تركيب الرسومات اتكرر",
+     lambda s: s.replace("el('artdefs').innerHTML = ART_DEFS;",
+                         "el('artdefs').innerHTML = ART_DEFS;\nel('artdefs').innerHTML = ART_DEFS;", 1),
      "مكرر"),
     ("زرار الرجوع بتاع الموبايل بطّل يمشي على المكدّس",
      lambda s: s.replace("if (S && backScreen()) return true;", "// removed", 1),
@@ -288,6 +459,91 @@ UI_CASES = [
      lambda s: s.replace("  govFilter = (e.s === 'governorate') ? e.id : 'all';",
                          "  govFilter = 'all';", 1),
      "مش مظبّطة السياق"),
+    # ---- the situation card: every escape hatch, one at a time -------------
+    ("كارت الموقف بقى فيه زرار قفل",
+     lambda s: s.replace("  h += '<div class=\"must\">' + (bad",
+                         "  h += '<button data-close=\"1\">✕</button>';\n  h += '<div class=\"must\">' + (bad", 1),
+     "باب خروج من غير قرار"),
+    ("زرار الرجوع بتاع الموبايل بطّل يحسب حساب الموقف",
+     lambda s: s.replace("  if (S && S.pendingSituation) return true;\n  var ovl = el('ovl');",
+                         "  var ovl = el('ovl');", 1),
+     "قرار مفروض إجباري"),
+    ("الوقت ينفع يمشي والموقف لسه مفتوح",
+     lambda s: s.replace("  if (v && S && S.pendingSituation) return;\n", "", 1),
+     "الوقف بيتلغي من غير قرار"),
+    ("الكارت مش بيترسم مع كل تحديث",
+     drop_from_draw_game,
+     "مش هيترسم مع كل تحديث"),
+    ("الواجهة بقت تمسح الموقف بنفسها",
+     lambda s: s.replace("function closeSheet() { el('ovl')",
+                         "function closeSheet() { if (S) S.pendingSituation = null; el('ovl')", 1),
+     "المحرك بس هو اللي يقفل الموقف"),
+    ("زرار الإجابة مش مسجّل في قايمة الضغطات",
+     drop_click("data-answer"),
+     "مش مسجّل في قايمة الضغطات"),
+    ("تمن من الخزينة مش بيتكتب على الزرار",
+     lambda s: s.replace("  treasury: function (n) { return ar(n) + 'م من الخزينة'; },\n", "", 1),
+     "هيبان مجاني وياخد الفلوس"),
+    ("الشاشة بتكتب تمن المحرك مش بيخصمه",
+     lambda s: s.replace("  personal: function (n) {", "  fame: function (n) {", 1),
+     "ما اتدفعتش"),
+    # These two pass check.py's reading of the file and are caught by the game's
+    # own run instead — the card renders, it just renders wrong.
+    ("الكارت بيتبني وبيفضل مخفي",
+     lambda s: s.replace("  box.innerHTML = h;\n  box.classList.remove('hidden');",
+                         "  box.innerHTML = h;", 1),
+     "الكارت مش بيظهر"),
+    ("كل الاختيارات بتقول ببلاش",
+     lambda s: s.replace("  if (!parts.length) return '<span class=\"ofree\">ببلاش</span>';\n  return parts.join('<br>');",
+                         "  return '<span class=\"ofree\">ببلاش</span>';", 1),
+     "بيقول ببلاش"),
+    ("بلوك كامل اتلزق مرتين", paste_a_function_twice, "مكرّرة"),
+    ("فاصلة إنجليزي في نص عربي",
+     lambda t: t.replace("'، يعني خطر الانقلاب بيزيد '", "', يعني خطر الانقلاب بيزيد '", 1),
+     "فاصلة إنجليزي"),
+    ("الحفظ بطّل يتكتب من drawGame",
+     lambda t: t.replace("  persist();\n}", "}", 1),
+     "هتضيع"),
+    ("الحفظ بيفضل موجود بعد ما اللاعب يموت",
+     lambda t: t.replace("  if (S.dead) { storeSet(SAVE_KEY, null); return; }", ""),
+     "اقفل التطبيق وافتحه تاني"),
+    ("التخزين بقى من غير حماية",
+     lambda t: t.replace("  try { return window.localStorage.getItem(key); } catch (e) { return null; }",
+                         "  return window.localStorage.getItem(key);"),
+     "تطبيق ميت"),
+    ("المسح بيحصل من غير سؤال تأكيد",
+     lambda t: t.replace("  else if (what === 'wipe') { openWipe(); }",
+                         "  else if (what === 'wipe') { storeSet(SAVE_KEY, null); drawMenu(); }"),
+     "من غير سؤال تأكيد"),
+    ("زرار «كمّل» بيبدأ لعبة جديدة",
+     lambda t: t.replace("    S = saved;\n    speed = prefs.speed;", "    S = newGame(setupState);\n    speed = prefs.speed;"),
+     "كمّلت ورجعت لشهر تاني"),
+    ("شاشة البداية بترجع تكتب خط الجيش بالإيد",
+     lambda t: t.replace("+ 'وخطك ' + ar(ARMY.line_by_government.dictator) + ' مش '",
+                         "+ 'وزير الدفاع تحت ٤٠ · وخطك ' + ar(ARMY.line_by_government.dictator) + ' مش '", 1),
+     "بالإيد"),
+    ("زرار القمع مش مسجّل في قايمة الضغطات",
+     drop_click("data-crack"),
+     "مش مسجّل في قايمة الضغطات"),
+    ("الكارت مش بيقول بيحصل إيه لو القمع فشل", hide_the_failure_case, "لو فشل"),
+    ("زرار الرشوة مش مسجّل في قايمة الضغطات",
+     drop_click("data-bribe"),
+     "مش مسجّل في قايمة الضغطات"),
+    ("احتمال ضياع الرشوة مش مكتوب على الزرار",
+     lambda t: t.replace("bribeLostChance(S)", "0", 1),
+     "خطر مستخبي"),
+    ("كارت الجيش اتشال من تاب الرئاسة",
+     lambda t: t.replace("    h += coupCard();", "", 1),
+     "بيوصّل لوزير الدفاع"),
+    ("الشبهة اتشالت من الشريط العلوي",
+     lambda t: re.sub(r"\n *\['الشبهة',[^\n]*\],", "", t, count=1),
+     "مؤشر والشبكة"),
+    ("الشاشة بطّلت توري الشبهة جاية منين",
+     lambda t: t.replace("heatSources(S)", "0 && 0 || ({talk:0,talkers:0,media:0,decay:0})"),
+     "جاية منين"),
+    ("الفضيحة بقت شكلها زي أي موقف عادي",
+     lambda t: t.replace("  var bad = (sit.kind === 'scandal');", "  var bad = false;", 1),
+     "مش مميّزة"),
     ("السياق فاضل على المحافظة بعد الخروج منها",
      lambda s: s.replace("  govFilter = (e.s === 'governorate') ? e.id : 'all';",
                          "  if (e.s === 'governorate') govFilter = e.id;", 1),
@@ -298,10 +554,47 @@ UI_CASES = [
 ]
 
 CSS_CASES = [
+    ("حالة على عنصر وليها قاعدة صندوق لوحدها",
+     lambda t: t.replace(".mtr.alarm{", ".mtr.danger{", 1),
+     "هيترسم بشكل الحاجة التانية"),
+    ("كلاس اتعرّف مرتين لحاجتين مختلفتين",
+     lambda t: t.replace(".sopt{width:100%", ".opt{width:100%", 1),
+     "متعرّف 2 مرة"),
+    ("مؤشر زيادة والشبكة زي ما هي",
+     lambda t: t.replace("grid-template-columns:repeat(5,1fr)",
+                         "grid-template-columns:repeat(4,1fr)", 1),
+     "هينزل سطر تاني"),
     ("سطر راجع تحت حافة الشريط فبيتقص",
      lambda s: s.replace("bottom:8px;font-size:10px", "bottom:-2px;font-size:10px", 1),
      "هيتقص من غير ما حد ياخد باله"),
 ]
+
+
+def retired_file_returns():
+    """A deleted file coming back is its own kind of breakage: nothing to mutate,
+    something to create."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "repo"
+        shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        (work / "game" / "sw.js").write_text("// عاد من الموت\n", encoding="utf-8")
+        env = dict(os.environ); env["CHECK_SKIP"] = "check_generated_files_match"
+        r = subprocess.run([sys.executable, str(work / "tools" / "check.py")],
+                           capture_output=True, text=True, env=env)
+        return r.returncode != 0 and "رجع تاني" in r.stdout
+
+
+def stray_root_copy():
+    """And a tools/ script appearing at the repo root — the browser-upload
+    mistake that turned the build red for two rounds while the real file in
+    tools/ stayed stale."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "repo"
+        shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        shutil.copy(work / "tools" / "check.py", work / "check.py")
+        env = dict(os.environ); env["CHECK_SKIP"] = "check_generated_files_match"
+        r = subprocess.run([sys.executable, str(work / "tools" / "check.py")],
+                           capture_output=True, text=True, env=env)
+        return r.returncode != 0 and "جذر المشروع" in r.stdout
 
 
 def broken_repo_fails(rel, mutate, as_json, rebuild=False, expect=None):
@@ -355,7 +648,8 @@ def main():
         # rebuild or the game still runs on the old numbers and the case passes
         # for the wrong reason. setup.json is the opposite: it is GENERATED, so
         # rebuilding would wipe the very mutation being tested.
-        jobs.append((name, rel, mutate, True, rel == "data/balance.json", None))
+        jobs.append((name, rel, mutate, True,
+                     rel != "data/setup.json", None))
     for name, rel, mutate in REBUILD_CASES:
         jobs.append((name, rel, mutate, False, True, None))
     for name, mutate, expect in MINISTER_CASES:
@@ -369,11 +663,17 @@ def main():
         results = list(pool.map(
             lambda j: broken_repo_fails(j[1], j[2], j[3], rebuild=j[4], expect=j[5]), jobs))
 
+    extra = [("ملف من اللي اتشالوا رجع", retired_file_returns()),
+             ("نسخة من ملف tools في جذر المشروع", stray_root_copy())]
+
     ok = True
     for (name, *_), caught in zip(jobs, results):
         print(f"  {'✓' if caught else '✗'} {name}")
         ok &= caught
-    total = len(jobs)
+    for name, caught in extra:
+        print(f"  {'✓' if caught else '✗'} {name}")
+        ok &= caught
+    total = len(jobs) + len(extra)
     print()
     if ok:
         print(f"✓ الفاحص مسك كل الأخطاء المتعمدة ({total} خطأ).")

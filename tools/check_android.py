@@ -104,3 +104,36 @@ def check(problems):
     java = (pkg_dir / "MainActivity.java").read_text(encoding="utf-8")
     if "onAndroidBack" in java and "function onAndroidBack" not in ui:
         problems.append("أندرويد: التطبيق بينده على onAndroidBack() واللعبة مش معرّفاها")
+
+    # 8. and the other direction: the page calls into the shell to close the
+    #    app. Three names have to line up — the object the shell exposes, the
+    #    method on it, and what the page calls. A rename on one side leaves a
+    #    button that looks alive and does nothing, which is the one failure
+    #    neither of us can see from here.
+    obj = re.search(r'addJavascriptInterface\(\s*new\s+\w+\(\)\s*,\s*"(\w+)"\s*\)', java)
+    # Only names that start with a capital letter: window.localStorage and
+    # friends are the browser, and a bridge object is ours. The convention is
+    # the check — without it every localStorage call read as a broken bridge.
+    called = re.findall(r"window\.([A-Z]\w*)\.(\w+)", ui)
+    names = set(called)
+    if not obj:
+        if names:
+            problems.append("أندرويد: اللعبة بتنده على التطبيق والتطبيق مش مضيف أي جسر "
+                            "(addJavascriptInterface) — الزرار هيبان شغال ومش هيعمل حاجة")
+    else:
+        exposed = obj.group(1)
+        methods = set(re.findall(r"@JavascriptInterface\s+public\s+\w+\s+(\w+)\s*\(", java))
+        if not methods:
+            problems.append("أندرويد: الجسر مضاف ومفيش فيه ولا دالة عليها @JavascriptInterface — "
+                            "من غير الوسم ده الدالة مش بتتشاف من الصفحة خالص")
+        for holder, method in names:
+            if holder != exposed:
+                problems.append(f"أندرويد: اللعبة بتنده على window.{holder} والتطبيق مضيف "
+                                f"«{exposed}» — الاسمين مش متطابقين")
+            elif method not in methods:
+                problems.append(f"أندرويد: اللعبة بتنده على {holder}.{method}() والتطبيق "
+                                f"مش مضيف الدالة دي")
+        for method in methods:
+            if not any(m == method for _, m in names):
+                problems.append(f"أندرويد: التطبيق مضيف {exposed}.{method}() ومحدش بينده "
+                                f"عليها من اللعبة")

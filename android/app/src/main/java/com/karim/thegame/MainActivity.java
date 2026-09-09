@@ -5,6 +5,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
@@ -41,6 +42,12 @@ public class MainActivity extends Activity {
         web.setBackgroundColor(Color.parseColor("#0D0F14"));
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
 
+        // The page cannot close the app by itself, so the Exit button on the
+        // menu calls in here. The name on both sides ("TheGame.exitApp") is
+        // compared by tools/check_android.py — a rename on one side alone
+        // leaves a button that looks alive and does nothing at all.
+        web.addJavascriptInterface(new Bridge(), "TheGame");
+
         web.loadUrl("file:///android_asset/index.html");
         setContentView(web);
 
@@ -48,6 +55,16 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(Color.parseColor("#141922"));
         getWindow().setNavigationBarColor(Color.parseColor("#141922"));
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+    }
+
+    /** The only thing the page is allowed to ask the shell to do. */
+    private class Bridge {
+        @JavascriptInterface
+        public void exitApp() {
+            // The call arrives on the WebView's own thread, and finishing an
+            // activity from anywhere but the UI thread does nothing.
+            runOnUiThread(() -> finishAndRemoveTask());
+        }
     }
 
     /**

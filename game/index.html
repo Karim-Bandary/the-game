@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#141922">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>الحُكم</title>
@@ -28,6 +26,35 @@ body{
 #app{max-width:520px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
 button{font-family:inherit;cursor:pointer;color:inherit}
 .hidden{display:none!important}
+
+/* ----------------------------------------------------------------- menu */
+.menu{flex:1;display:flex;flex-direction:column;overflow-y:auto;padding:0 18px
+  calc(18px + env(safe-area-inset-bottom))}
+.menu.hidden{display:none!important}
+.mhead{text-align:center;padding:min(14vh,90px) 0 26px;flex:none}
+.mlogo{font-size:46px;line-height:1;margin-bottom:12px}
+.mname{font-size:30px;font-weight:700;letter-spacing:.02em;color:var(--gold)}
+/* NOT .mtag — that name already belongs to the label on a minister's card.
+   The checker caught it the moment this was written. */
+.mline{font-size:12px;color:var(--dim);margin-top:8px;line-height:1.8}
+.mbody{flex:1}
+.mbtn{width:100%;text-align:right;background:var(--panel);border:1px solid var(--line2);
+  border-radius:15px;padding:15px;margin-bottom:10px;color:var(--ink);font-size:15.5px;
+  font-weight:600;font-family:inherit;display:flex;flex-direction:column;
+  align-items:flex-start;gap:5px}
+.mbtn.go{background:#182620;border-color:#2c4a38;color:#8ee0ab}
+.mbtn[disabled]{opacity:.4}
+.mbtn span{font-size:11px;color:var(--dim);font-weight:400;line-height:1.7}
+.mnote{font-size:11px;color:var(--dim2);line-height:1.9;text-align:center;margin-top:16px}
+.mrow2{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--panel);border:1px solid var(--line);border-radius:13px;
+  padding:13px;margin-bottom:9px}
+.mrow2 .lb2{font-size:13.5px}
+.mrow2 .lb2 span{display:block;font-size:10.5px;color:var(--dim2);margin-top:4px;line-height:1.7}
+.seg{display:flex;gap:5px;flex:none}
+.seg button{background:var(--panel2);border:1px solid var(--line2);color:#8b93a5;
+  border-radius:8px;padding:6px 11px;font-size:12px;font-family:inherit}
+.seg button.on{background:#1e2a22;border-color:#2c4a38;color:#8ee0ab}
 
 /* ---------------------------------------------------------------- setup */
 .setup{flex:1;display:flex;flex-direction:column;overflow:hidden}
@@ -95,13 +122,18 @@ input:focus{outline:none;border-color:var(--gold2)}
 .cbtn{background:var(--panel2);border:1px solid var(--line2);color:#8b93a5;border-radius:7px;
   padding:4px 8px;font-size:11px;min-width:30px}
 .cbtn.on{background:#1e2a22;border-color:#2c4a38;color:#8ee0ab}
-.meters{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.meters{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
 .mtr{text-align:center}
-.mtr .lb{font-size:8.5px;color:var(--dim);display:block;margin-bottom:3px}
-.mtr .vl{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;display:block;margin-bottom:3px}
+.mtr .lb{font-size:8px;color:var(--dim);display:block;margin-bottom:3px}
+.mtr .vl{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;display:block;margin-bottom:3px}
 .mtr .bar{height:3px;background:#0d1017;border-radius:2px;overflow:hidden}
 .mtr .fl{height:100%;border-radius:2px;transition:width .4s,background .4s}
-.mtr.danger{animation:pulse 1.3s infinite}
+/* NOT called .danger: that name already belongs to the big red action button,
+   and a bare .danger rule would restyle any element carrying it. The meters did
+   carry it, so a country in trouble drew its top bar as a red button-shaped box
+   — shipped that way from the day the meters existed, because nobody had looked
+   at the screen while a meter was in the red. */
+.mtr.alarm{animation:pulse 1.3s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
 .view{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .band{position:relative;height:132px;overflow:hidden;background:var(--bg)}
@@ -248,6 +280,44 @@ button.mrow .mhd{padding-left:16px}
 .calc2 .cr2{display:flex;justify-content:space-between;padding:3px 0;color:#9aa3b6}
 .calc2 .cr2 b{font-variant-numeric:tabular-nums;color:var(--ink)}
 .warn2{color:var(--bad);font-size:11.5px;margin-top:9px;line-height:1.8}
+/* ------------------------------------------------------- situation card */
+/* Sits above the sheet layer on purpose: a situation can land while a sheet is
+   open, and the compulsory decision has to be the thing on top. It has no ✕ and
+   no backdrop click — the only way out is one of the choices. */
+.sit{position:fixed;inset:0;background:rgba(4,6,10,.9);display:flex;align-items:center;
+  justify-content:center;z-index:25;padding:12px}
+.sit.hidden{display:none!important}
+.sbox{width:100%;max-width:500px;background:#171c26;border:1px solid #3a4457;
+  border-radius:20px;padding:18px 15px calc(16px + env(safe-area-inset-bottom));
+  max-height:92vh;overflow-y:auto}
+.sbox.scandal{border-color:#7a3b3b;background:#1c1518}
+.sflag{display:inline-block;background:#3a1e22;border:1px solid #7a3b3b;color:#e8a0a0;
+  border-radius:8px;padding:4px 9px;font-size:10px;margin-bottom:9px;
+  font-variant-numeric:tabular-nums}
+.shd{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.sic{font-size:26px}
+.stt{font-size:17px;font-weight:700;line-height:1.4}
+.stx{font-size:12.5px;color:#b9b2a2;line-height:1.9;margin-bottom:12px}
+.purse{display:flex;gap:6px;margin-bottom:12px}
+.pit{flex:1;background:#10141c;border:1px solid var(--line);border-radius:10px;
+  padding:7px 6px;text-align:center}
+.pit span{display:block;font-size:9.5px;color:var(--dim2);margin-bottom:3px}
+.pit b{font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--gold)}
+.sopt{width:100%;text-align:right;background:var(--panel2);border:1px solid var(--line2);
+  border-radius:13px;padding:12px;margin-bottom:8px;font-family:inherit;color:var(--ink)}
+.sopt.lock{opacity:.5;border-style:dashed}
+.orow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.onm{font-size:13.5px;font-weight:600}
+.opr{font-size:10.5px;font-variant-numeric:tabular-nums;color:var(--gold2);
+  flex:none;text-align:left;line-height:1.6}
+.ofree{color:var(--good)}
+.osub{font-size:10.5px;color:var(--dim2);margin-top:5px;line-height:1.7}
+.olock{font-size:10.5px;color:var(--bad);margin-top:6px;line-height:1.7}
+/* A card that only appears when something is wrong. Named for what it is, not
+   for the red button class — see check_modifier_is_not_a_block. */
+.danger2{border-color:#5d2a2a;background:rgba(198,60,60,.06)}
+.must{font-size:10.5px;color:var(--dim);text-align:center;margin-top:10px;line-height:1.8}
+
 .toast{position:fixed;bottom:78px;left:50%;transform:translateX(-50%);background:#1e2532;
   border:1px solid #3a4457;color:var(--ink);padding:11px 17px;border-radius:12px;font-size:12.5px;
   opacity:0;transition:opacity .3s;pointer-events:none;z-index:30;text-align:center;
@@ -259,7 +329,17 @@ button.mrow .mhd{padding-left:16px}
 <div id="artdefs"></div>
 <div id="app">
 
-  <div class="setup" id="setup">
+  <!-- The first thing the app shows. The setup wizard now sits behind it. -->
+  <div class="menu" id="menu">
+    <div class="mhead">
+      <div class="mlogo">🏛️</div>
+      <div class="mname">الحُكم</div>
+      <div class="mline">إنت الرئيس. الأرقام هي اللي بتحكم.</div>
+    </div>
+    <div class="mbody" id="menuBody"></div>
+  </div>
+
+  <div class="setup hidden" id="setup">
     <div class="steps" id="steps"></div>
     <div class="body" id="setupBody"></div>
     <div class="foot" id="setupFoot"></div>
@@ -285,6 +365,9 @@ button.mrow .mhd{padding-left:16px}
 
 </div>
 <div class="ovl hidden" id="ovl"></div>
+<!-- The situation card. Deliberately NOT inside #ovl: the overlay is the
+     dismissible layer, and this one must not be dismissible by anything. -->
+<div class="sit hidden" id="sit"></div>
 <div class="toast" id="toast"></div>
 <script>/* ============================================================================
    Tab artwork — drawn in code, not photographed.
@@ -446,11 +529,19 @@ var ART_DEFS = '<svg width="0" height="0" style="position:absolute" aria-hidden=
    at build time as BALANCE.
    ========================================================================== */
 
-var BALANCE   = {"_note": "كل الفلوس بالمليون. كل المؤشرات من 0 إلى 100 إلا التضخم (نسبة سنوية).", "start": {"treasury": 2400, "inflation": 6.0, "tax_rate": 20, "utility_price": 50, "food_subsidy": 60, "budget_pct": 118, "minister_competence": 65, "admin_salaries": 180, "population_millions": 12.0}, "governorates": {"capital": {"name": "العاصمة", "population": 4.2, "wealth": 1.3, "youth": 0.85, "facilities": {"water": 27, "power": 18, "sewage": 18, "health": 36, "edu": 45, "police": 54, "fire": 36}}, "industrial": {"name": "الصناعية", "population": 2.4, "wealth": 1.1, "youth": 1.0, "facilities": {"water": 18, "power": 9, "sewage": 9, "health": 18, "edu": 27, "police": 27, "fire": 18}}, "agri": {"name": "الزراعية", "population": 2.2, "wealth": 0.8, "youth": 1.05, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 18, "edu": 18, "police": 18, "fire": 18}}, "south": {"name": "الجنوب", "population": 2.6, "wealth": 0.6, "youth": 1.35, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 9, "edu": 27, "police": 27, "fire": 9}}, "border": {"name": "الحدودية", "population": 0.6, "wealth": 0.75, "youth": 1.0, "facilities": {"water": 9, "power": 9, "sewage": 0, "health": 9, "edu": 9, "police": 9, "fire": 9}}}, "services": {"water": {"name": "المياه", "serves_millions": 0.167, "monthly_ask": 60, "build_cost": 58, "build_months": 6, "adds_monthly": 1.0, "approval_weight": 0.16}, "power": {"name": "الكهربا", "serves_millions": 0.2, "monthly_ask": 105, "build_cost": 100, "build_months": 11, "adds_monthly": 1.77, "approval_weight": 0.15}, "sewage": {"name": "الصرف", "serves_millions": 0.223, "monthly_ask": 45, "build_cost": 68, "build_months": 9, "adds_monthly": 0.9, "approval_weight": 0.11}, "health": {"name": "الصحة", "serves_millions": 0.11, "monthly_ask": 82, "build_cost": 44, "build_months": 8, "adds_monthly": 0.77, "approval_weight": 0.17}, "edu": {"name": "التعليم", "serves_millions": 0.067, "monthly_ask": 95, "build_cost": 20, "build_months": 4, "adds_monthly": 0.67, "approval_weight": 0.14}, "police": {"name": "الشرطة", "serves_millions": 0.057, "monthly_ask": 58, "build_cost": 17, "build_months": 3, "adds_monthly": 0.57, "approval_weight": 0.15}, "fire": {"name": "الإسعاف", "serves_millions": 0.057, "monthly_ask": 35, "build_cost": 13, "build_months": 3, "adds_monthly": 0.43, "approval_weight": 0.12}}, "income": {"income_tax_coef": 2.3, "corporate_tax_coef": 33.0, "utility_bills_coef": 22.0, "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))", "tax_free_below": 18}, "food": {"agri_yield": 11.0, "world_price": 28, "consumption_per_million": 1.0, "price_smoothing": 0.55, "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج", "price_base": 50, "price_gap_coef": 6.0, "price_inflation_coef": 0.9, "price_inflation_free_below": 6.0, "subsidy_coef": 0.22}, "inflation": {"monthly_decay": 0.08, "floor": 3.0, "deficit_penalty": 1.4, "collapse_at": 150.0, "pain_starts_above": 9.0, "pain_coef": 1.5, "print_350_adds": 2.2}, "mood": {"smoothing": 0.3, "stability_smoothing": 0.22, "tax_pain_coef": 1.6, "tax_pain_free_below": 18, "utility_pain_coef": 0.8, "food_pain_coef": 0.85, "approval_danger": 35, "stability_danger": 40, "boil_cap": 100, "boil_cooldown": 7, "boil_gain_coef": 0.8, "boil_gain_base": 3.0, "settle_months": 25}, "population": {"monthly_growth_base": 0.0018, "health_penalty_coef": 0.001}, "deficit": {"operating_multiplier": 0.55, "decay_multiplier": 2.0}, "projects": {"monthly_cost_each": 9}, "stability": {"base": 74, "opposition_threshold": 55, "opposition_coef": 0.8, "inflation_coef": 0.6, "smoothing": 0.22, "loyalty_floor": 62, "loyalty_coef": 0.55, "_loyalty_note": "متوسط ولاء الوزرا تحت loyalty_floor بينزّل الثبات. من غير ده الولاء رقم على الشاشة مالوش تمن."}, "levers": {"_note": "حدود المقابض اللي اللاعب بيحركها في شاشة وزير المالية. القيم الابتدائية في start لازم تقع جوّه المدى ده.", "tax": {"min": 0, "max": 60, "step": 1}, "utility": {"min": 0, "max": 150, "step": 5}, "subsidy": {"min": 0, "max": 400, "step": 10}}, "corruption": {"_note": "السرقة من الخزينة. التمن الحقيقي إن الفلوس بتمشي من الخدمات — والخطر إن وزير مالية ولاؤه واطي بيسرّبك.", "max_share_per_month": 0.08, "hard_cap": 400, "leak_base_pct": 4.0, "leak_loyalty_coef": 0.35, "leak_size_coef": 30.0, "leak_min_pct": 2.0, "leak_max_pct": 85.0, "approval_hit": 6.0, "stability_hit": 3.0}};
-var SETUP     = {"government_types": [{"id": "monarchy", "ic": "👑", "nm": "ملكي", "tag": "الشرعية موروثة", "desc": "إنت ملك. الناس مش لازم تحبك عشان تفضل في الكرسي — بس تغيير أي حاجة صعب.", "mods": {"stability": 12, "ap": -1}, "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"], "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك", "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١.٥"], "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."}, {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق", "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.", "mods": {"competence": 4}, "good": ["كفاءة الوزرا +٤ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)", "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"], "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت", "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"], "feel": "لعبة بإيقاع. أربع سنين شغل، وامتحان."}, {"id": "dictator", "ic": "🎖️", "nm": "ديكتاتوري", "tag": "شرعيتك من الجيش", "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش هو الحاجة الوحيدة اللي بتخاف منها.", "mods": {"ap": 2, "approval": -10}, "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪", "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠.٦ — الإعلام مقفول"], "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار", "⚠️ لو رضا الجيش نزل تحت ٣٠ → انقلاب فوري ونهاية تالتة"], "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."}], "society_types": [{"id": "conservative", "ic": "🕌", "nm": "مجتمع محافظ", "tag": "بطيء ومستقر", "desc": "مجتمع متماسك بيقدّر الاستقرار. بيسامحك كتير — لو ما حاولتش تغيّره.", "mods": {"stability": 8}, "good": ["ثبات +٨", "الغليان بيتراكم أبطأ ١٥٪", "كتلة المتدينين أكبر — ولو راضية بتهدّي الباقي"], "bad": ["كل إصلاح كبير بيكلف ضعف الرضا", "التعليم أثره على الاقتصاد أقل ٢٠٪"]}, {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب", "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.", "mods": {"competence": 3}, "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٣"], "bad": ["الفضيحة بتنتشر ×١.٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]}, {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة", "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.", "mods": {"loyalty": 15, "competence": -6}, "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الجيش أرخص ٣٠٪", "المحافظات البعيدة أهدى"], "bad": ["كفاءة الوزرا −٦ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]}, {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية", "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.", "mods": {"approval": -6}, "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"], "bad": ["كل أزمة بتكبر ×١.٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]}], "base_start": {"approval": 52, "stability": 68, "treasury": 2400, "ap": 6, "inflation": 6.0, "competence": 65, "loyalty": 65}, "suggested_country_names": ["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان", "مملكة الشمال", "دولة المرتفعات", "بلاد النخيل"], "suggested_ruler_names": ["كريم عبد الحكم", "سليم الفارس", "عادل بن راشد", "نور الدين حلمي", "طارق العامري", "مراد الشريف"]};
-var MINISTERS = {"_note": "الوزرا كأفراد. كل خدمة ليها وزير واحد بالظبط، وكفاءته هي اللي بتحدد تشغيلها.", "pm_bonus_coef": 0.12, "_pm_bonus_note": "رئيس وزراء كفء بيرفع كفاءة كل الوزرا شوية، والضعيف بينزّلها. الحساب: (كفاءته − ٥٠) × المعامل", "_tags_note": "الوصف اللي بيتعلّق على الوزير في شاشة المجلس. أول واحد يتطابق هو اللي يظهر، فالترتيب مهم. الحدود: ضعيف تحت ٦٠ (وزارته مش هتشتغل حتى بتمويل كامل)، كفء من ٧٠، موالي من ٧٥، مش موالي تحت ٥٣.", "tags": [{"id": "gem", "nm": "كنز", "tone": "good", "comp": [72, 100], "loy": [70, 100]}, {"id": "risk", "nm": "كفء وغير موالي", "tone": "warn", "comp": [70, 100], "loy": [0, 52]}, {"id": "yes", "nm": "موالي وضعيف", "tone": "warn", "comp": [0, 59], "loy": [75, 100]}, {"id": "rot", "nm": "ضعيف ومش معاك", "tone": "bad", "comp": [0, 59], "loy": [0, 52]}], "_dismiss_note": "الإقالة بتوريك تلات مرشحين بأرقامهم وتختار. العشوائية جاية من بذرة محفوظة في اللعبة، فنفس اللعبة في نفس الشهر بتديك نفس التلاتة — لو مشيت شهر بيتغيّروا.", "dismiss": {"ap_cost": 2, "stability_hit": 5, "candidates": 3, "comp_range": [34, 88], "loy_range": [38, 92], "min_months_in_post": 3, "others_loyalty_hit": 4, "loy_tradeoff_coef": 0.85, "loy_spread": 16}, "_reshuffle_note": "التعديل الوزاري: بيغيّر كل الوزرا مرة واحدة ما عدا رئيس الوزراء نفسه (هو اللي بيعمله). أعمى — مفيش اختيار. كفاءة رئيس الوزراء بتزحزح نوعية اللي بيجوا: (كفاءته − ٥٠) × pm_quality_coef.", "reshuffle": {"ap_cost": 4, "stability_hit": 14, "approval_hit": 4, "cooldown_months": 12, "pm_quality_coef": 0.25}, "candidate_names": ["سامي الجبالي", "هالة منصور", "رشدي الطنطاوي", "نادية العشري", "فؤاد بدران", "منى الشرقاوي", "عادل الحلواني", "سلوى قنديل", "مدحت السيوفي", "إيمان رزق", "بهاء الدسوقي", "ليلى الخولي", "شريف عبد اللاه", "وفاء المنياوي", "غالب السنهوري", "أميرة الفقي", "حسام النجّار", "رانيا الزيات", "طارق المرشدي", "سناء بيومي", "يسري الشناوي", "دعاء الحداد", "مأمون العزب", "نجوى الشاذلي"], "posts": [{"id": "pm", "role": "pm", "icon": "👑", "name": "رئيس الوزراء", "of": "الحكومة كلها", "services": [], "start": {"competence": 58, "loyalty": 71, "party": "cons", "name": "عصمت الشوربجي"}, "note": "كفاءته بتضيف لكل الوزرا · وهو درعك وقت الفضايح"}, {"id": "finance", "role": "finance", "icon": "💰", "name": "وزير المالية", "of": "الخزينة والضرايب والأسعار", "services": [], "start": {"competence": 72, "loyalty": 64, "party": "indep", "name": "زينب الفرماوي"}, "note": "كفاءته بتحدد نسبة تحصيل الضرايب"}, {"id": "utilities", "role": "services", "icon": "🔧", "name": "وزير المرافق", "of": "المياه والكهربا والصرف", "services": ["water", "power", "sewage"], "start": {"competence": 63, "loyalty": 60, "party": "indep", "name": "كمال الدرملي"}, "note": "أكبر وزارة — تلات خدمات وزنهم ٤٢٪ من رضا الناس"}, {"id": "interior", "role": "interior", "icon": "🚔", "name": "وزير الداخلية", "of": "الشرطة والمطافي والإسعاف", "services": ["police", "fire"], "start": {"competence": 52, "loyalty": 88, "party": "cons", "name": "صفية الأباصيري"}, "note": "موالي جدًا وضعيف — بيغطي عليك وبيبهدل الخدمة · وهو اللي بيقمع الشغب"}, {"id": "health", "role": "services", "icon": "🏥", "name": "وزير الصحة", "of": "الصحة", "services": ["health"], "start": {"competence": 81, "loyalty": 45, "party": "modern", "name": "هيثم العدوي"}, "note": "كفء وغير موالي — بيصلّح الخدمة وممكن يسرّب فضايحك"}, {"id": "education", "role": "services", "icon": "🎓", "name": "وزير التعليم", "of": "التعليم", "services": ["edu"], "start": {"competence": 66, "loyalty": 55, "party": "modern", "name": "نعمات الشبراوي"}, "note": "التعليم أثره على الدخل بعيد المدى"}, {"id": "supply", "role": "supply", "icon": "🌾", "name": "وزير التموين", "of": "الغذاء والدعم والاستيراد", "services": [], "start": {"competence": 38, "loyalty": 79, "party": "cons", "name": "جلال المتبولي"}, "note": "أضعف واحد في الحكومة — والغذاء أسرع حاجة بتولّع الشارع"}, {"id": "defence", "role": "defence", "icon": "🎖️", "name": "وزير الدفاع", "of": "الجيش", "services": [], "start": {"competence": 69, "loyalty": 52, "party": "nat", "name": "بدرية السماحي"}, "note": "الوسيط في رشوة الجيش — لو ولاؤه واطي رشوتك ممكن ما توصلش"}, {"id": "media", "role": "media", "icon": "📺", "name": "وزير الإعلام", "of": "الحملات الإعلامية", "services": [], "start": {"competence": 47, "loyalty": 91, "party": "cons", "name": "أنور الجندي"}, "note": "ولاؤه بيبطّأ انتشار الفضايح"}], "_settling_note": "وزير لسه مستلم مش بيشتغل بكامل كفاءته. ده اللي بيمنع اللاعب من إنه يفضل يقلّب في الحكومة لحد ما يجيب أرقام مثالية — كل تغيير بيكلّفه شهور شغل ضعيف. الوزرا اللي ورثتهم بيبدأوا مستقرين، فشهورهم بتبدأ من months.", "settling": {"months": 4, "start_factor": 0.55}, "_tradeoff_note": "المقايضة الأساسية في اللعبة: كل ما المرشح أكفأ، كل ما ولاؤه أقل في المتوسط. من غير ده اللاعب بيقدر بالتكرار يجيب حكومة كفؤة وموالية في نفس الوقت، وتبقى إدارة الوزرا هي أقوى استراتيجية في اللعبة.", "_party_note": "الحزب هنا id من data/parliament.json، مش اسم مكتوب. قايمة واحدة للأحزاب في مكان واحد."};
+var BALANCE   = {"_note": "كل الفلوس بالمليون. كل المؤشرات من 0 إلى 100 إلا التضخم (نسبة سنوية).", "start": {"treasury": 2400, "inflation": 6.0, "tax_rate": 20, "utility_price": 50, "food_subsidy": 60, "budget_pct": 118, "minister_competence": 65, "admin_salaries": 180, "population_millions": 12.0}, "governorates": {"capital": {"name": "العاصمة", "population": 4.2, "wealth": 1.3, "youth": 0.85, "facilities": {"water": 27, "power": 18, "sewage": 18, "health": 36, "edu": 45, "police": 54, "fire": 36}}, "industrial": {"name": "الصناعية", "population": 2.4, "wealth": 1.1, "youth": 1.0, "facilities": {"water": 18, "power": 9, "sewage": 9, "health": 18, "edu": 27, "police": 27, "fire": 18}}, "agri": {"name": "الزراعية", "population": 2.2, "wealth": 0.8, "youth": 1.05, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 18, "edu": 18, "police": 18, "fire": 18}}, "south": {"name": "الجنوب", "population": 2.6, "wealth": 0.6, "youth": 1.35, "facilities": {"water": 9, "power": 9, "sewage": 9, "health": 9, "edu": 27, "police": 27, "fire": 9}}, "border": {"name": "الحدودية", "population": 0.6, "wealth": 0.75, "youth": 1.0, "facilities": {"water": 9, "power": 9, "sewage": 0, "health": 9, "edu": 9, "police": 9, "fire": 9}}}, "services": {"water": {"name": "المياه", "serves_millions": 0.167, "monthly_ask": 60, "build_cost": 58, "build_months": 6, "adds_monthly": 1.0, "approval_weight": 0.16}, "power": {"name": "الكهربا", "serves_millions": 0.2, "monthly_ask": 105, "build_cost": 100, "build_months": 11, "adds_monthly": 1.77, "approval_weight": 0.15}, "sewage": {"name": "الصرف", "serves_millions": 0.223, "monthly_ask": 45, "build_cost": 68, "build_months": 9, "adds_monthly": 0.9, "approval_weight": 0.11}, "health": {"name": "الصحة", "serves_millions": 0.11, "monthly_ask": 82, "build_cost": 44, "build_months": 8, "adds_monthly": 0.77, "approval_weight": 0.17}, "edu": {"name": "التعليم", "serves_millions": 0.067, "monthly_ask": 95, "build_cost": 20, "build_months": 4, "adds_monthly": 0.67, "approval_weight": 0.14}, "police": {"name": "الشرطة", "serves_millions": 0.057, "monthly_ask": 58, "build_cost": 17, "build_months": 3, "adds_monthly": 0.57, "approval_weight": 0.15}, "fire": {"name": "الإسعاف", "serves_millions": 0.057, "monthly_ask": 35, "build_cost": 13, "build_months": 3, "adds_monthly": 0.43, "approval_weight": 0.12}}, "income": {"income_tax_coef": 2.3, "corporate_tax_coef": 33.0, "utility_bills_coef": 22.0, "formula": "الدخل = مؤشر الأسعار × (سكان×2.30×الضريبة×كفاءة المالية + سكان×33×(الكهربا÷60)×كفاءة المالية + سكان×22×(سعر الفواتير÷50))", "tax_free_below": 18}, "food": {"agri_yield": 11.0, "world_price": 28, "consumption_per_million": 1.0, "price_smoothing": 0.55, "formula": "الإنتاج = 11 × (مستوى مياه الزراعية ÷ 60) · العجز = السكان − الإنتاج", "price_base": 50, "price_gap_coef": 6.0, "price_inflation_coef": 0.9, "price_inflation_free_below": 6.0, "subsidy_coef": 0.22}, "inflation": {"monthly_decay": 0.08, "floor": 3.0, "deficit_penalty": 1.4, "collapse_at": 150.0, "pain_starts_above": 9.0, "pain_coef": 1.5, "print_350_adds": 2.2}, "mood": {"smoothing": 0.3, "stability_smoothing": 0.22, "tax_pain_coef": 1.6, "tax_pain_free_below": 18, "utility_pain_coef": 0.8, "food_pain_coef": 0.85, "approval_danger": 35, "stability_danger": 40, "boil_cap": 100, "boil_cooldown": 7, "boil_gain_coef": 0.8, "boil_gain_base": 3.0, "settle_months": 25}, "population": {"monthly_growth_base": 0.0018, "health_penalty_coef": 0.001}, "deficit": {"operating_multiplier": 0.55, "decay_multiplier": 2.0}, "projects": {"monthly_cost_each": 9}, "stability": {"base": 74, "opposition_threshold": 55, "opposition_coef": 0.8, "inflation_coef": 0.6, "smoothing": 0.22, "loyalty_floor": 62, "loyalty_coef": 0.55, "_loyalty_note": "متوسط ولاء الوزرا تحت loyalty_floor بينزّل الثبات. من غير ده الولاء رقم على الشاشة مالوش تمن."}, "levers": {"_note": "حدود المقابض اللي اللاعب بيحركها في شاشة وزير المالية. القيم الابتدائية في start لازم تقع جوّه المدى ده.", "tax": {"min": 0, "max": 60, "step": 1}, "utility": {"min": 0, "max": 150, "step": 5}, "subsidy": {"min": 0, "max": 400, "step": 10}}, "corruption": {"_note": "السرقة من الخزينة. التمن الحقيقي إن الفلوس بتمشي من الخدمات — والخطر إن وزير مالية ولاؤه واطي بيسرّبك.", "max_share_per_month": 0.08, "hard_cap": 400, "leak_base_pct": 4.0, "leak_loyalty_coef": 0.35, "leak_size_coef": 30.0, "leak_min_pct": 2.0, "leak_max_pct": 85.0, "approval_hit": 6.0, "stability_hit": 3.0}, "heat": {"_note": "الشبهة: رقم واحد بيتغذّى من أفعالك ومن وزرا ولاؤهم واطي بيتكلموا، ووزير الإعلام بينزّله. لما يعدّي scandal_at بتحصل فضيحة — والفضيحة موقف عادي في situations.json مكتوب عليه kind: scandal، عشان كل حمايات المواقف (وقف الوقت، مفيش هروب، لازم يبقى فيه اختيار مجاني) تسري عليها من غير كود جديد.", "cap": 100, "monthly_decay": 1.2, "_ministers_note": "كل وزير ولاؤه تحت disloyal_floor بيزوّد شبهة كل شهر. الشكل المقصود: حكومة ولاؤها واطي شوية وزير الإعلام بيشيلها، وحكومة منهارة بجد بتطلّع شبهة أكتر من أي وزير إعلام — يعني الشبهة مش عقاب على الفساد بس، دي كمان نتيجة إنك مش ماسك حكومتك.", "disloyal_floor": 55, "disloyal_coef": 0.06, "_media_note": "وزير الإعلام: دي شغلانته الوحيدة في اللعبة. كفاءته فوق media_floor بتنزّل الشبهة. وزير إعلام كفء بيشيل شغل حكومة نصها مش موالية — وده اللي بيخلي المنصب يستاهل وزير كويس.", "media_floor": 45, "media_coef": 0.075, "_actions_note": "أفعالك. السرقة أغلى مصدر بفارق كبير، والتسريب بيضاعف. طبع الفلوس أرخص لأنه قانوني على الورق، بس مش ببلاش: الناس بتسأل الفلوس دي جت منين.", "steal_per_100m": 4.5, "leak_extra": 14, "print_per_100m": 1.4, "governor_swap": 8, "_scandal_note": "الخط. فوقه بتحصل فضيحة أول ما بوابة الفضايح تسمح. اللي تحته الشبهة مجرد ضغط على الثبات.", "scandal_at": 60, "stability_coef": 0.13}};
+var SETUP     = {"government_types": [{"id": "monarchy", "ic": "👑", "nm": "ملكي", "tag": "الشرعية موروثة", "desc": "إنت ملك. الناس مش لازم تحبك عشان تفضل في الكرسي — بس تغيير أي حاجة صعب.", "mods": {"stability": 12, "ap": -1}, "good": ["ثبات سياسي بيبدأ أعلى بـ١٢", "الغليان بيتراكم أبطأ ١٥٪", "العزل محتاج أزمة أكبر بكتير"], "bad": ["طاقة قرارات أقل (٥) — البلاط والتقاليد بيقيدوك", "الشباب والحزب الحديث بيبدأوا غاضبين", "عزل أي وزير بيكلف ثبات ×١.٥"], "feel": "لعبة بطيئة ومستقرة. بتعيش طويل، بس بتتحرك ببطء."}, {"id": "republic", "ic": "🗳️", "nm": "جمهوري", "tag": "شرعيتك من الصندوق", "desc": "دولة بمؤسسات. الجهاز بيشتغل أحسن — بس فيه انتخابات كل ٤ سنين، والرضا وقتها هو كل حاجة.", "mods": {"competence": 4}, "good": ["كفاءة الوزرا +٤ — التعيين مؤسسي مش مزاجي", "دخل الضرايب +٨٪ (جهاز تحصيل منظم)", "الفضيحة الواحدة مش بتوديك — المؤسسات بتمتص"], "bad": ["🗳️ انتخابات كل ٤ سنين — رضاك تحت ٤٠ يوم الانتخابات = خرجت", "نفوذ الأحزاب +١٥٪", "الإعلام أحر → الفضايح بتنتشر أسرع"], "feel": "لعبة بإيقاع. أربع سنين شغل، وامتحان."}, {"id": "dictator", "ic": "🎖️", "nm": "ديكتاتوري", "tag": "شرعيتك من الجيش", "desc": "كل السلطة في إيدك. الأحزاب ضعيفة والإعلام مقموع — والجيش — يعني وزير الدفاع — هو الحاجة الوحيدة اللي بتخاف منها.", "mods": {"ap": 2, "approval": -10}, "good": ["طاقة قرارات ٨ — تعمل اللي إنت عايزه", "القمع بينجح أكتر ٣٠٪", "نفوذ الأحزاب −٤٠٪", "احتمال الفضيحة ×٠.٦ — الإعلام مقفول"], "bad": ["الرضا بيبدأ −١٠ وبينزل لوحده كل شهر", "دخل الشركات −١٥٪ — مفيش استثمار", "⚠️ خط الجيش عندك ٥٤ — أعلى نظام. ولاء وزير الدفاع تحته = خطر انقلاب بيتراكم"], "feel": "لعبة قوة وخوف. بتقدر على كل حاجة إلا حاجة واحدة."}], "society_types": [{"id": "conservative", "ic": "🕌", "nm": "مجتمع محافظ", "tag": "بطيء ومستقر", "desc": "مجتمع متماسك بيقدّر الاستقرار. بيسامحك كتير — لو ما حاولتش تغيّره.", "mods": {"stability": 8}, "good": ["ثبات +٨", "الغليان بيتراكم أبطأ ١٥٪", "كتلة المتدينين أكبر — ولو راضية بتهدّي الباقي"], "bad": ["كل إصلاح كبير بيكلف ضعف الرضا", "التعليم أثره على الاقتصاد أقل ٢٠٪"]}, {"id": "open", "ic": "🏙️", "nm": "مجتمع مدني منفتح", "tag": "بينمو وبيراقب", "desc": "مجتمع متعلم وبيتحرك بسرعة. بيبني لك اقتصاد قوي — وبيمسك عليك كل غلطة.", "mods": {"competence": 3}, "good": ["التعليم أثره +٣٠٪ على الدخل طويل المدى", "دخل الشركات +١٢٪", "كفاءة الوزرا +٣"], "bad": ["الفضيحة بتنتشر ×١.٥ — الإعلام حر", "كتلة الشباب أكبر وبتنزل الشارع أسرع"]}, {"id": "tribal", "ic": "🪶", "nm": "مجتمع قبلي عشائري", "tag": "ولاء بدل كفاءة", "desc": "الولاء هنا أهم من الشهادة. رجالتك مخلصين لك — ومش شاطرين.", "mods": {"loyalty": 15, "competence": -2}, "good": ["ولاء الوزرا بيبدأ +١٥", "رشوة الضباط أرخص ٣٠٪", "المحافظات البعيدة أهدى"], "bad": ["كفاءة الوزرا −٦ — محسوبية", "لو بنيت في محافظة كتير، الباقيين بيغاروا ورضاهم ينزل"]}, {"id": "divided", "ic": "⚡", "nm": "مجتمع منقسم", "tag": "صعب — للمرة التانية", "desc": "مجتمع مشقوق لنصين. خصومك مش متفقين على حاجة — ولا شعبك كمان.", "mods": {"approval": -6}, "good": ["الأحزاب مش بتتحد ضدك", "تقدر تلعب طرف ضد طرف — التفاوض أرخص"], "bad": ["كل أزمة بتكبر ×١.٤", "الرضا بيبدأ −٦ والغليان بيتراكم أسرع"]}], "base_start": {"approval": 52, "stability": 68, "treasury": 2400, "ap": 6, "inflation": 6.0, "competence": 65, "loyalty": 65}, "suggested_country_names": ["جمهورية النهر", "دولة السواحل", "بلاد الرمال", "اتحاد الوديان", "مملكة الشمال", "دولة المرتفعات", "بلاد النخيل"], "suggested_ruler_names": ["كريم عبد الحكم", "سليم الفارس", "عادل بن راشد", "نور الدين حلمي", "طارق العامري", "مراد الشريف"]};
+var MINISTERS = {"_note": "الوزرا كأفراد. كل خدمة ليها وزير واحد بالظبط، وكفاءته هي اللي بتحدد تشغيلها.", "pm_bonus_coef": 0.12, "_pm_bonus_note": "رئيس وزراء كفء بيرفع كفاءة كل الوزرا شوية، والضعيف بينزّلها. الحساب: (كفاءته − ٥٠) × المعامل", "_tags_note": "الوصف اللي بيتعلّق على الوزير في شاشة المجلس. أول واحد يتطابق هو اللي يظهر، فالترتيب مهم. الحدود: ضعيف تحت ٦٠ (وزارته مش هتشتغل حتى بتمويل كامل)، كفء من ٧٠، موالي من ٧٥، مش موالي تحت ٥٣.", "tags": [{"id": "gem", "nm": "كنز", "tone": "good", "comp": [72, 100], "loy": [70, 100]}, {"id": "risk", "nm": "كفء وغير موالي", "tone": "warn", "comp": [70, 100], "loy": [0, 52]}, {"id": "yes", "nm": "موالي وضعيف", "tone": "warn", "comp": [0, 59], "loy": [75, 100]}, {"id": "rot", "nm": "ضعيف ومش معاك", "tone": "bad", "comp": [0, 59], "loy": [0, 52]}], "_dismiss_note": "الإقالة بتوريك تلات مرشحين بأرقامهم وتختار. العشوائية جاية من بذرة محفوظة في اللعبة، فنفس اللعبة في نفس الشهر بتديك نفس التلاتة — لو مشيت شهر بيتغيّروا.", "dismiss": {"ap_cost": 2, "stability_hit": 5, "candidates": 3, "comp_range": [34, 88], "loy_range": [38, 92], "min_months_in_post": 3, "others_loyalty_hit": 4, "loy_tradeoff_coef": 0.85, "loy_spread": 16}, "_reshuffle_note": "التعديل الوزاري: بيغيّر كل الوزرا مرة واحدة ما عدا رئيس الوزراء نفسه (هو اللي بيعمله). أعمى — مفيش اختيار. كفاءة رئيس الوزراء بتزحزح نوعية اللي بيجوا: (كفاءته − ٥٠) × pm_quality_coef.", "reshuffle": {"ap_cost": 4, "stability_hit": 14, "approval_hit": 4, "cooldown_months": 12, "pm_quality_coef": 0.25}, "candidate_names": ["سامي الجبالي", "هالة منصور", "رشدي الطنطاوي", "نادية العشري", "فؤاد بدران", "منى الشرقاوي", "عادل الحلواني", "سلوى قنديل", "مدحت السيوفي", "إيمان رزق", "بهاء الدسوقي", "ليلى الخولي", "شريف عبد اللاه", "وفاء المنياوي", "غالب السنهوري", "أميرة الفقي", "حسام النجّار", "رانيا الزيات", "طارق المرشدي", "سناء بيومي", "يسري الشناوي", "دعاء الحداد", "مأمون العزب", "نجوى الشاذلي"], "posts": [{"id": "pm", "role": "pm", "icon": "👑", "name": "رئيس الوزراء", "of": "الحكومة كلها", "services": [], "start": {"competence": 58, "loyalty": 71, "party": "cons", "name": "عصمت الشوربجي"}, "note": "كفاءته بتتضاف لكل وزير تاني — رئيس وزراء ضعيف بينزّل الحكومة كلها"}, {"id": "finance", "role": "finance", "icon": "💰", "name": "وزير المالية", "of": "الخزينة والضرايب والأسعار", "services": [], "start": {"competence": 72, "loyalty": 64, "party": "indep", "name": "زينب الفرماوي"}, "note": "كفاءته بتحدد نسبة تحصيل الضرايب"}, {"id": "utilities", "role": "services", "icon": "🔧", "name": "وزير المرافق", "of": "المياه والكهربا والصرف", "services": ["water", "power", "sewage"], "start": {"competence": 63, "loyalty": 60, "party": "indep", "name": "كمال الدرملي"}, "note": "أكبر وزارة — تلات خدمات وزنهم ٤٢٪ من رضا الناس"}, {"id": "interior", "role": "interior", "icon": "🚔", "name": "وزير الداخلية", "of": "الشرطة والمطافي والإسعاف", "services": ["police", "fire"], "start": {"competence": 52, "loyalty": 88, "party": "cons", "name": "صفية الأباصيري"}, "note": "موالي جدًا وضعيف — وكفاءته هي نسبة نجاح قمع الشغب"}, {"id": "health", "role": "services", "icon": "🏥", "name": "وزير الصحة", "of": "الصحة", "services": ["health"], "start": {"competence": 81, "loyalty": 45, "party": "modern", "name": "هيثم العدوي"}, "note": "كفء وغير موالي — بيصلّح الخدمة وممكن يسرّب فضايحك"}, {"id": "education", "role": "services", "icon": "🎓", "name": "وزير التعليم", "of": "التعليم", "services": ["edu"], "start": {"competence": 66, "loyalty": 55, "party": "modern", "name": "نعمات الشبراوي"}, "note": "التعليم أثره على الدخل بعيد المدى"}, {"id": "supply", "role": "supply", "icon": "🌾", "name": "وزير التموين", "of": "الغذاء والدعم والاستيراد", "services": [], "start": {"competence": 38, "loyalty": 79, "party": "cons", "name": "جلال المتبولي"}, "note": "أضعف واحد في الحكومة — والغذاء أسرع حاجة بتولّع الشارع"}, {"id": "defence", "role": "defence", "icon": "🎖️", "name": "وزير الدفاع", "of": "الجيش", "services": [], "start": {"competence": 69, "loyalty": 52, "party": "nat", "name": "بدرية السماحي"}, "note": "الوسيط في رشوة الجيش — لو ولاؤه واطي رشوتك ممكن ما توصلش"}, {"id": "media", "role": "media", "icon": "📺", "name": "وزير الإعلام", "of": "الحملات الإعلامية", "services": [], "start": {"competence": 47, "loyalty": 91, "party": "cons", "name": "أنور الجندي"}, "note": "كفاءته بتنزّل الشبهة كل شهر"}], "_settling_note": "وزير لسه مستلم مش بيشتغل بكامل كفاءته. ده اللي بيمنع اللاعب من إنه يفضل يقلّب في الحكومة لحد ما يجيب أرقام مثالية — كل تغيير بيكلّفه شهور شغل ضعيف. الوزرا اللي ورثتهم بيبدأوا مستقرين، فشهورهم بتبدأ من months.", "settling": {"months": 4, "start_factor": 0.55}, "_tradeoff_note": "المقايضة الأساسية في اللعبة: كل ما المرشح أكفأ، كل ما ولاؤه أقل في المتوسط. من غير ده اللاعب بيقدر بالتكرار يجيب حكومة كفؤة وموالية في نفس الوقت، وتبقى إدارة الوزرا هي أقوى استراتيجية في اللعبة.", "_party_note": "الحزب هنا id من data/parliament.json، مش اسم مكتوب. قايمة واحدة للأحزاب في مكان واحد."};
 var PARLIAMENT = {"_note": "مجلس الشعب: أحزاب ليها مقاعد، وكتل اجتماعية ليها ناس. الاتنين أرقامهم متحسوبة من حالة الدولة، مش محفوظة — فمستحيل يتناقضوا مع اللي اللاعب شايفه في الشاشات التانية.", "_parties_note": "كل حزب بيقيس رضاه بمزيج من حاجات موجودة في اللعبة. المجموع لكل حزب لازم يساوي ١. المقاعد مجموعها ١٠٠.", "minister_bonus": 4, "_minister_bonus_note": "كل وزير من الحزب بيضيف للحزب ده. ده بيربط شاشة الوزرا بشاشة المجلس: اختيارك للوزرا بيغيّر برلمانك. الرقم صغير عن قصد — لو كبر، تعيين ٣ وزرا من حزب بيوصّله ١٠٠ ويلغي كل الأسباب التانية اللي بتخليه راضي أو زعلان.", "parties": [{"id": "cons", "nm": "حزب المحافظين", "ic": "🕌", "seats": 34, "cares": "الأمن والاستقرار والدعم · وبيكره الضرايب", "drivers": [{"k": "stability", "w": 0.4}, {"k": "security", "w": 0.3}, {"k": "lowTax", "w": 0.3}]}, {"id": "modern", "nm": "الحزب الحديث", "ic": "🎓", "seats": 26, "cares": "التعليم والصحة والكهربا · وبيكره التضخم", "drivers": [{"k": "education", "w": 0.3}, {"k": "health", "w": 0.25}, {"k": "power", "w": 0.2}, {"k": "lowInflation", "w": 0.25}]}, {"id": "nat", "nm": "الحزب القومي", "ic": "🎖️", "seats": 22, "cares": "هيبة الدولة والأمن وخزينة مليانة", "drivers": [{"k": "security", "w": 0.35}, {"k": "stability", "w": 0.3}, {"k": "treasury", "w": 0.35}]}, {"id": "indep", "nm": "المستقلون", "ic": "🪑", "seats": 18, "cares": "بيمشوا مع الشارع · رضاهم من رضا الناس", "drivers": [{"k": "approval", "w": 0.7}, {"k": "services", "w": 0.3}]}], "_backing_note": "تأييد المجلس = مجموع (مقاعد الحزب × رضاه) ÷ ١٠٠. تحت floor بينزّل الثبات.", "backing": {"floor": 55, "stability_coef": 0.3}, "_blocs_note": "الكتل الاجتماعية مش رقم جديد للرضا — دي تفكيك للرقم الموجود. كل كتلة بتحس بنفس الأوجاع اللي بتحسبها اللعبة (خدمات، غلا الأكل، ضرايب، تضخم) بس بحساسية مختلفة. متوسطهم المرجّح بالسكان لازم يطابق الرضا القومي، والفاحص بيتأكد من ده.", "blocs": [{"id": "poor", "nm": "الفقرا والعمال", "ic": "🧱", "share": 0.34, "cares": "الأكل قبل أي حاجة", "sens": {"service": 1.0, "food": 1.65, "tax": 0.55, "inflation": 1.25}}, {"id": "middle", "nm": "الطبقة الوسطى", "ic": "🏘️", "share": 0.28, "cares": "الخدمات والضرايب", "sens": {"service": 1.1, "food": 0.85, "tax": 1.35, "inflation": 1.0}}, {"id": "youth", "nm": "الشباب", "ic": "🎒", "share": 0.18, "cares": "التعليم والشغل · وأقل صبرًا", "sens": {"service": 1.15, "food": 0.95, "tax": 0.85, "inflation": 1.1}}, {"id": "biz", "nm": "رجال الأعمال", "ic": "💼", "share": 0.11, "cares": "الكهربا والضرايب · الأكل مش مشكلتهم", "sens": {"service": 0.85, "food": 0.2, "tax": 1.9, "inflation": 0.85}}, {"id": "rural", "nm": "أهل الريف", "ic": "🌾", "share": 0.09, "cares": "المياه والصرف · بعيدين عن الدولة", "sens": {"service": 1.05, "food": 1.15, "tax": 0.6, "inflation": 0.95}}]};
 var BANK       = {"_note": "البنك المركزي. محافظه مش وزير — ما بيتشالش في التعديل الوزاري، واستقلاله هو المقايضة كلها.", "_independence_note": "الاستقلال ٠..١٠٠. محافظ مستقل بيقفل عليك الحنفية بس الفلوس بتفضل محترمة. محافظ من عندك بيطبع اللي تطلبه، بس السوق ما بيصدقهاش فكل جنيه بيولّع تضخم أكتر. المقايضة دي هي سبب وجود التاب.", "start": {"name": "الدكتور فتحي العمروسي", "independence": 74}, "print": {"base_cap": 220, "cap_per_lost_independence": 4.4, "_cap_note": "السقف = base_cap + (١٠٠ − الاستقلال) × cap_per_lost_independence. باستقلال ٧٤ السقف ٣٣٤م، وبمحافظ من عندك (٢٠) يوصل ٥٧٢م.", "inflation_per_350": 2.2, "inflation_per_lost_independence": 0.012, "_inflation_note": "التضخم لكل ٣٥٠م = inflation_per_350 × (١ + (١٠٠ − الاستقلال) × inflation_per_lost_independence). باستقلال ٧٤ الطبعة بتكلّف ٢٫٩٪، وبمحافظ من عندك (٢٠) بتكلّف ٤٫٣٪ — يعني الطباعة بتبقى أسهل وأغلى في نفس الوقت.", "once_per_months": 3, "_once_note": "طباعة كل تلات شهور بالكتير. من غير كده اللاعب بيطبع كل شهر ويحوّل التضخم لعملة."}, "swap": {"ap_cost": 3, "stability_hit": 6, "cooldown_months": 24, "new_independence": [18, 46], "_swap_note": "تعيين محافظ من عندك. الاستقلال الجديد بيتسحب من المدى ده — كله أقل من الأصلي، فالمقايضة مضمونة في الاتجاهين."}};
+var SITUATIONS = {"_note": "المواقف. كل موقف بيوقف الوقت وبيستنى قرار. كل حاجة هنا بيانات: شروط الظهور، والاختيارات، وتمن كل اختيار. المحرك مش فيه ولا موقف مكتوب بالإيد.", "_rate_note": "معدّل المقاطعة. اللاعب اختار إن كل موقف يوقف الوقت، فالمعدّل هو اللي بيمنع اللعبة تبقى مقاطعة مستمرة. min_gap_months أهم رقم هنا: أقل مدة بين موقفين مهما كانت الظروف.", "rate": {"quiet_months_at_start": 12, "min_gap_months": 4, "chance_per_month": 0.85, "max_per_year": 3}, "_when_note": "شرط الظهور: [المقياس، المقارنة، الرقم]. المقاييس كلها معرّفة في PROBES في المحرك، والفاحص بيرفض أي مقياس مش موجود — عشان ما يحصلش موقف بيستنى شرط مستحيل ويفضل مستخبي للأبد.", "_effect_note": "الأثر: {المفتاح: الرقم}. المفاتيح معرّفة في EFFECTS في المحرك. التمن (cost) بيتشال قبل الأثر، ولو مش قادر تدفعه الاختيار بيبان مقفول ومكتوب عليه السبب.", "situations": [{"id": "water_riot", "icon": "💧", "title": "عطش في الجنوب", "text": "أهالي الجنوب قطعوا الطريق الزراعي. بيقولوا المياه بتيجي ساعتين في اليوم، ومحافظهم مش بيرد على تليفوناتهم.", "weight": 3, "cooldown_months": 30, "when": [["service.water", "<", 55]], "choices": [{"nm": "ابعت قافلة مياه فورًا", "sub": "حل مؤقت بيهدّي الشارع، وبيكلّف الخزينة", "cost": {"treasury": 180, "ap": 1}, "effects": {"approval": 2, "boil": -8}}, {"nm": "زوّد ميزانية المرافق", "sub": "الحل الحقيقي — بس أثره بيبان بعد شهور", "cost": {"ap": 2}, "effects": {"pct.water": 15, "approval": 1}}, {"nm": "سيبهم يهدوا لوحدهم", "sub": "مجاني — والغليان بيزيد", "cost": {}, "effects": {"approval": -3, "boil": 3}}]}, {"id": "bread_queue", "icon": "🍞", "title": "طوابير العيش", "text": "صور طوابير الخبز اتنشرت. وزير التموين بيقول إن الاستيراد اتأخر، والناس بتقول إن الرغيف صغر.", "weight": 3, "cooldown_months": 24, "when": [["foodPrice", ">", 62]], "choices": [{"nm": "زوّد الدعم", "sub": "بينزّل السعر بسرعة، وبيفضل بيسحب من الخزينة كل شهر", "cost": {"ap": 1}, "effects": {"subsidy": 60, "approval": 2}}, {"nm": "افتح استيراد طارئ", "sub": "دفعة واحدة كبيرة من الخزينة", "cost": {"treasury": 260, "ap": 1}, "effects": {"foodPrice": -10, "approval": 2}}, {"nm": "حمّل وزير التموين المسؤولية علنًا", "sub": "بيمتصّ الغضب دلوقتي، وبيكسر ولاءه هو وباقي الحكومة", "cost": {}, "effects": {"approval": 3, "minister.supply.loyalty": -18, "cabinetLoyalty": -4}}]}, {"id": "blackout", "icon": "⚡", "title": "انقطاع كهربا في الصناعية", "text": "المصانع وقفت تلات أيام. رجال الأعمال بيقولوا إنهم هيسرّحوا عمال لو تكررت.", "weight": 2, "cooldown_months": 30, "when": [["service.power", "<", 58]], "choices": [{"nm": "ابني محطة على حساب الخزينة فورًا", "sub": "غالي، بس بيحل المشكلة من جذرها", "cost": {"treasury": 320, "ap": 2}, "effects": {"build.power.industrial": 1, "approval": 2}}, {"nm": "رشّد الكهربا على البيوت وسيب المصانع", "sub": "المصانع تشتغل والناس تزعل", "cost": {"ap": 1}, "effects": {"approval": -5, "treasury": 90}}, {"nm": "اوعد بحل ومتعملش حاجة", "sub": "مجاني النهاردة", "cost": {}, "effects": {"approval": -2, "boil": 2}}]}, {"id": "tax_anger", "icon": "🧾", "title": "غضب من الضرايب", "text": "التجار قافلين محالهم يوم واحد احتجاجًا. المجلس بيقول إن الضريبة بقت فوق طاقة الناس.", "weight": 2, "cooldown_months": 30, "when": [["tax", ">", 30]], "choices": [{"nm": "نزّل الضريبة خمسة", "sub": "بيهدّي الشارع وبينقّص دخلك كل شهر", "cost": {"ap": 1}, "effects": {"tax": -5, "approval": 2}}, {"nm": "اثبت على موقفك", "sub": "الخزينة بتفضل، والغليان بيزيد", "cost": {}, "effects": {"approval": -4, "boil": 3, "stability": -2}}, {"nm": "استثني الصغار من الزيادة", "sub": "حل وسط بيكلّف شوية دخل", "cost": {"treasury": 140, "ap": 1}, "effects": {"approval": 2, "stability": 1}}]}, {"id": "minister_offer", "icon": "🤝", "title": "عرض من وزير", "text": "وزير من حكومتك جالك على انفراد. بيقول إنه يقدر يخلي وزارته تشتغل أحسن — لو غضّيت البصر عن حاجات صغيرة.", "weight": 2, "cooldown_months": 36, "when": [["avgLoyalty", "<", 62]], "choices": [{"nm": "اقبل", "sub": "شغل أحسن، وولاء أعلى — وحاجة تتقال عليك بعدين", "cost": {"ap": 1}, "effects": {"cabinetLoyalty": 6, "cabinetCompetence": 3}}, {"nm": "ارفض واتكلم بصوت عالي", "sub": "الحكومة هتخاف منك، وهتزعل منك", "cost": {"ap": 1}, "effects": {"cabinetLoyalty": -5, "stability": 3, "approval": 2}}, {"nm": "ارفض في صمت", "sub": "مفيش مكسب ومفيش خسارة", "cost": {}, "effects": {}}]}, {"id": "empty_treasury", "icon": "🏦", "title": "الخزينة على وش الصفر", "text": "وزير المالية بيقول إن مرتبات الشهر الجاي مش مضمونة. محافظ البنك مستنى قرارك.", "weight": 4, "cooldown_months": 18, "when": [["treasury", "<", 400]], "choices": [{"nm": "اطبع فلوس", "sub": "بتحل الشهر، وبتولّع التضخم", "cost": {"ap": 1}, "effects": {"printCap": 1}}, {"nm": "زوّد الضريبة خمسة", "sub": "دخل دايم، وناس زعلانة", "cost": {"ap": 1}, "effects": {"tax": 5, "approval": -3}}, {"nm": "قصّ ميزانيات الوزارات", "sub": "بيوفّر فورًا، والخدمات بتنزل", "cost": {"ap": 2}, "effects": {"allPct": -12}}, {"nm": "أجّل المرتبات شهر", "sub": "مجاني النهاردة — وبتدفعه غاليًا في الشارع", "cost": {}, "effects": {"treasury": 200, "approval": -4, "stability": -3, "boil": 4}}]}, {"id": "foreign_offer", "icon": "🤵", "title": "وفد أجنبي", "text": "وفد من دولة جارة عرض قرض بشروط. وزير المالية بيقول إن الشروط فيها كلام مكتوب صغير.", "weight": 2, "cooldown_months": 48, "when": [["months", ">", 12]], "choices": [{"nm": "خد القرض", "sub": "فلوس فورًا، وتضخم بعدين", "cost": {"ap": 1}, "effects": {"treasury": 600, "inflation": 1.2}}, {"nm": "فاوض على شروط أحسن", "sub": "أقل فلوس، وضرر أقل — لو وزير ماليتك كفء", "cost": {"ap": 2}, "effects": {"treasury": 320, "inflation": 0.3, "stability": 1}}, {"nm": "ارفض علنًا", "sub": "مفيش فلوس، والناس بتحب الكرامة", "cost": {}, "effects": {"approval": 3, "stability": -1}}]}, {"id": "parliament_demand", "icon": "⚖️", "title": "مطلب من المجلس", "text": "كتلة في المجلس بتطالب بحصة أكبر في الحكومة، وبتلوّح بسحب التأييد.", "weight": 2, "cooldown_months": 36, "when": [["backing", "<", 72]], "choices": [{"nm": "استجيب لمطلبهم", "sub": "المجلس يهدا، والحكومة تضعف شوية", "cost": {"ap": 1}, "effects": {"stability": 3, "cabinetCompetence": -3, "cabinetLoyalty": 4}}, {"nm": "اشتريهم بمشروع في دوايرهم", "sub": "بيكلّف الخزينة وبيهدّي الشارع كمان", "cost": {"treasury": 240, "ap": 1}, "effects": {"approval": 2, "stability": 2}}, {"nm": "تجاهلهم", "sub": "مجاني، والثبات بينزل", "cost": {}, "effects": {"stability": -4}}]}, {"id": "press_campaign", "kind": "scandal", "icon": "📰", "title": "حملة صحفية عليك", "text": "جرايد المعارضة طلعت بملف عن «سنة من الوعود». لسه مفيش اتهام محدد، بس الكلام ماشي.", "weight": 3, "cooldown_months": 20, "when": [["heat", ">", 42]], "choices": [{"nm": "خلّي وزير الإعلام يرد", "sub": "شغلانته بالظبط — بيمتصّ الحملة", "cost": {"ap": 1}, "effects": {"heat": -14, "approval": 1}}, {"nm": "اشتري صفحات في الجرايد", "sub": "بيوقّف الحملة بفلوس الخزينة", "cost": {"treasury": 220, "ap": 1}, "effects": {"heat": -20}}, {"nm": "متردّش", "sub": "مجاني — والكلام بيكبر", "cost": {}, "effects": {"heat": 4, "approval": -2}}]}, {"id": "minister_tape", "kind": "scandal", "icon": "🎙️", "title": "تسجيل مسرّب", "text": "تسجيل لواحد من وزرالك بيتكلم عن «اللي بيتقسّم فوق» اتنشر. الوزير بيقول إنه مقطّع ومركّب.", "weight": 3, "cooldown_months": 30, "when": [["heat", ">", 52]], "choices": [{"nm": "قيله فورًا", "sub": "بيقفل الموضوع، وباقي الحكومة بتخاف منك وبتزعل", "cost": {"ap": 2}, "effects": {"heat": -26, "cabinetLoyalty": -7, "approval": 2, "stability": -2}}, {"nm": "قف جنبه علنًا", "sub": "بيكسبك ولاء الحكومة، وبيحطّك في نفس الخانة", "cost": {"ap": 1}, "effects": {"heat": 8, "cabinetLoyalty": 8, "approval": -3}}, {"nm": "قول إنه ملفّق واسكت", "sub": "مجاني — ومحدش صدّق", "cost": {}, "effects": {"heat": 3, "approval": -4, "stability": -2}}]}, {"id": "graft_file", "kind": "scandal", "icon": "🗂️", "title": "ملف الفلوس اللي مشيت", "text": "لجنة في المجلس فتحت ملف عن فروق في حساب الخزينة. بيسألوا عن أرقام إنت عارف مصدرها.", "weight": 4, "cooldown_months": 36, "when": [["heat", ">", 60], ["stolenTotal", ">", 200]], "choices": [{"nm": "حمّل وزير المالية المسؤولية", "sub": "بيمتصّ الملف كله، وبيخسّرك أهم وزير عندك", "cost": {"ap": 2}, "effects": {"heat": -34, "minister.finance.loyalty": -30, "cabinetLoyalty": -5, "approval": 1}}, {"nm": "اشتري صمت اللجنة من جيبك", "sub": "الفلوس اللي خدتها بترجع تشتريلك سكوت", "cost": {"personal": 260}, "effects": {"heat": -40}}, {"nm": "رجّع جزء واعترف بخطأ إداري", "sub": "بيكلّفك من جيبك، والناس بتقدّر الاعتراف", "cost": {"personal": 180, "ap": 1}, "effects": {"heat": -30, "approval": 4, "stability": 2}}, {"nm": "انكر كل حاجة", "sub": "مجاني — والملف بيفضل مفتوح", "cost": {}, "effects": {"heat": -8, "approval": -6, "stability": -4, "boil": 3}}]}, {"id": "foreign_file", "kind": "scandal", "icon": "🕵️", "title": "ملف عند دولة جارة", "text": "سفير جارتك قال لوزير خارجيتك، بابتسامة، إن عندهم «أوراق تهمّك». مقالش أكتر من كده.", "weight": 2, "cooldown_months": 48, "when": [["heat", ">", 70], ["months", ">", 36]], "choices": [{"nm": "ادفع اللي عايزينه من الخزينة", "sub": "بيشتري الملف، وبيبان في دفتر الشهر", "cost": {"treasury": 480, "ap": 1}, "effects": {"heat": -36}}, {"nm": "اعمل صفقة سياسية", "sub": "بتكلّفك مكانك جوّه، مش فلوس", "cost": {"ap": 2}, "effects": {"heat": -30, "stability": -5, "approval": -2}}, {"nm": "قول لهم اعملوا اللي انتوا عايزينه", "sub": "مجاني — واللي جاي أوحش", "cost": {}, "effects": {"heat": 6, "stability": -3, "approval": -3}}]}], "_free_note": "الاختيار المجاني في كل موقف مش المفروض يبقى الأسوأ دايمًا. اللاعب الضعيف مش قادر يدفع، فبياخد المجاني غصب — ولو المجاني بيزوّد الغليان، بيبقى فيه لفة موت: فقير ← مجاني ← غليان ← أفقر. الغليان هنا مخفّف عن قصد، والتمن الحقيقي للتجاهل هو الرضا مش الغليان.", "_paid_note": "قاعدة: الاختيار اللي بيتدفع بيمنع الضرر، مش بيدي مكسب كبير. من غير القاعدة دي الغني بيشتري رضا من كل موقف والفقير بياخد الضرر، فالمواقف تبقى بتوسّع الفرق بين الأقوى والأضعف بدل ما تكون أزمة على الاتنين.", "_scandal_note": "الفضايح. موقف عادي بالظبط، الفرق الوحيد إنه مكتوب عليه kind: scandal — يعني ليه بوابة معدّل خاصة بيه وبيتاخد قبل المواقف العادية، وبيستخدم نفس مكنة المواقف في كل حاجة تانية. شرط الظهور بيتقاس على heat، والفاحص بيرفض أي فضيحة مش شرطها على heat عشان ما تحصلش فضيحة مالهاش علاقة بالشبهة اللي اللاعب كان بيتفرج عليها. وكمان: الفضيحة اللي موضوعها فلوس مشيت شرطها على stolenTotal — اللي هو مجموع كل اللي اتاخد في العمر كله ومبينزلش أبدًا. من غير الشرط ده كانت هتحصل لرئيس نضيف حكومته بتنهار، ويطلع اتهام مالوش أساس في اللعبة اللي هو عاشها.", "scandal_rate": {"quiet_months_at_start": 12, "min_gap_months": 7, "chance_per_month": 1.0, "max_per_year": 2}};
+var ARMY       = {"_note": "الجيش. مفيش مؤشر اسمه «رضا الجيش» — ولاء وزير الدفاع هو الجيش. اللاعب اختار كده، والسبب إن رقمين بيتحركوا مع بعض معناهم إن اللاعب لازم يراقب حاجتين بدل حاجة، والوزير أصلاً قدامه على الشاشة وليه اسم ووش.", "_line_note": "الخط. فوقه الجيش معاك والخطر بينزل، وتحته الخطر بيتراكم. سرعة التراكم بتزيد كل ما نزلت تحت الخط أكتر — يعني ولاء ٤٠ مش زي ولاء ١٠، والفرق ده هو اللي بيخلي الرشوة الصغيرة تنفع في وقتها. بالأرقام دي: رئيس سايب وزير دفاعه ١٢ نقطة تحت الخط عنده تلات سنين قبل ما الجيش يتحرك، ورئيس وزير دفاعه ولاؤه ١٠ عنده سنة وربع. والتعافي حقيقي: من نص الخطر بترجع لصفر في حوالي سنة لو رفعت ولاءه فوق الخط.", "loyalty_line": 40, "_line_by_gov_note": "الخط بيختلف حسب نظام الحكم، وده اللي بيخلي كلام شاشة البداية صح. الديكتاتوري شرعيته من الجيش نفسه، فالضباط بيتوقعوا أكتر وخطهم أعلى — يعني نفس الوزير اللي بيعدّي عند رئيس جمهوري بيبقى خطر عند ديكتاتوري. الملكي في النص: الشرعية موروثة فالجيش مش مصدرها، بس مش بعيد عنها. من غير الاختلاف ده كانت شاشة البداية بتبيع للاعب خطر مش موجود.", "line_by_government": {"republic": 40, "monarchy": 45, "dictator": 54}, "risk_per_point_below": 0.22, "risk_decay_above": 4.0, "risk_cap": 100, "stability_coef": 0.16, "_bribe_note": "الرشوة من رصيدك الشخصي مش من الخزينة. ده مقصود: بيقفل الدايرة اللي اللعبة كلها مبنية عليها — تسرق عشان تدفع للجيش، والسرقة بتطلّع شبهة. ولو الرشوة كانت من الخزينة كانت هتبقى سطر في الدفتر يعدّي من غير ما حد يسأل.", "bribe": {"cost": 220, "ap_cost": 1, "loyalty_gain": 14, "once_per_months": 4, "heat": 3, "_lost_note": "الوزير هو الوسيط. لو ولاؤه واطي فيه احتمال ياخد الفلوس وما توصلش الجيش — والاحتمال ده مكتوب قدام اللاعب قبل ما يدوس، زي نسبة التسريب في السرقة بالظبط. من غير ده الرشوة تبقى زرار بيشتري ولاء بسعر ثابت، والمنصب ما بيفرقش مين قاعد فيه.", "lost_base_pct": 6.0, "lost_per_point_below_line": 1.9, "lost_max_pct": 62.0, "lost_loyalty_gain": 3}, "_event_note": "التنبيهات. الخطر بيتقال للاعب كل ما يعدّي ربع، عشان ما يحصلش موت من رقم ما شافوش. نفس قاعدة الغليان.", "warn_steps": 4};
+var CRACKDOWN  = {"_note": "قمع الشغب. زرار على مكتب وزير الداخلية، مش موقف بييجي على مزاج المحرك: الغليان بيعلى قدام اللاعب بالشهور، فالمقبض لازم يبقى في إيده لما هو يقرر مش لما اللعبة تقرر. وده نفس شكل كل حاجة تانية — الطباعة عند البنك، الرشوة عند الدفاع، السرقة عند المالية.", "_floor_note": "مش هينفع تقمع شارع هادي، بس الخط واطي عن قصد: الغليان لما بيبدأ بيمشي بسرعة، فلو الزرار ما بيفتحش غير في آخر لحظة بيبقى موجود ومالوش لازمة. الشكل المقصود إن القمع الناجح بيشتري تقريبًا سبع شهور صافي بعد ما تحسب إن الرضا اللي بينزل بيرجّع الغليان يعلى أسرع.", "boil_floor": 12, "cost": {"ap": 2, "treasury": 150, "once_per_months": 4}, "_success_note": "النجاح بيتحسب من كفاءة وزير الداخلية — هو اللي بينزّل الأمن على الأرض. ونظام الحكم بيزوّد أو بينقّص، وده اللي بيخلي كلام شاشة البداية صح: الديكتاتوري متوعود بإن القمع بينجح أكتر عنده، فلازم يبقى فعلاً كده مش كلام.", "success": {"base_pct": 26.0, "per_competence_point": 0.62, "max_pct": 88.0, "min_pct": 12.0}, "success_by_government": {"republic": -8, "monarchy": 0, "dictator": 22}, "_win_note": "القمع الناجح بيطفّي الشارع وبيرجّع الثبات — وبيتدفع تمنه رضا وشبهة. يعني هو مش حل، هو تأجيل بتمن معروف.", "win": {"boil": -45, "approval": -5, "stability": 5, "heat": 7}, "_fail_note": "والفاشل أوحش من إنك ما تعملش حاجة — لازم يكون كده. لو أسوأ نتيجة للقمع هي «مفيش فايدة»، يبقى مفيش سبب واحد إن اللاعب ما يدوسش الزرار كل مرة، والقرار مش هيبقى قرار.", "fail": {"boil": 12, "approval": -11, "stability": -7, "heat": 14}};
+
+/* A fingerprint of the data and the rules this bundle was built from, filled in
+   by tools/build_game.py. Its only job is to tell a save file from THIS build
+   apart from a save file written by an older one. */
+var BUILD = '7ae47e88749d';
 
 /* Seconds of real time per in-game month. Slow is deliberately slow: the player
    should be able to read a screen before the month turns. */
@@ -505,6 +596,60 @@ function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
 }
 
+/* --------------------------------------------------------------- the save */
+
+/* Only the last few lines are ever read, so the rest is weight on every write.
+   Every push to the log goes through here. */
+var LOG_KEEP = 60;
+function logLine(S, line) {
+  S.log.push(line);
+  if (S.log.length > LOG_KEEP) S.log.splice(0, S.log.length - LOG_KEEP);
+}
+
+var SAVE_VERSION = 1;
+
+function saveBlob(S) {
+  return JSON.stringify({ v: SAVE_VERSION, build: BUILD, state: S });
+}
+
+/* Returns the state, or a sentence saying why this save cannot be used. It is
+   never a crash and never a half-load: a save from an older build can name a
+   minister post or a situation that no longer exists, and a game running on
+   half-old data with nothing on screen saying so is worse than losing it.
+
+   The build fingerprint alone would be enough for our own releases; the shape
+   checks below are for the case the fingerprint cannot see — a file edited by
+   hand, or storage that came back truncated. */
+function loadBlob(text) {
+  var blob;
+  try { blob = JSON.parse(text); } catch (e) { return 'الحفظ باظ ومش بيتقري'; }
+  if (!blob || blob.v !== SAVE_VERSION) return 'الحفظ ده من نسخة أقدم من اللعبة';
+  if (blob.build !== BUILD) return 'الحفظ ده اتعمل بنسخة تانية من اللعبة';
+
+  var S = blob.state, i;
+  if (!S || typeof S !== 'object') return 'الحفظ فاضي';
+  for (i = 0; i < POST_IDS.length; i++) {
+    if (!S.ministers || !S.ministers[POST_IDS[i]]) return 'الحفظ ناقصه وزير';
+  }
+  for (i = 0; i < GOV_IDS.length; i++) {
+    if (!S.govAppr || S.govAppr[GOV_IDS[i]] === undefined) return 'الحفظ ناقصه محافظة';
+    if (!S.level || !S.level[GOV_IDS[i]]) return 'الحفظ ناقصه أرقام محافظة';
+  }
+  for (i = 0; i < SERVICE_IDS.length; i++) {
+    if (!S.pct || S.pct[SERVICE_IDS[i]] === undefined) return 'الحفظ ناقصه خدمة';
+  }
+  if (!govOf(S) || !socOf(S)) return 'الحفظ فيه نظام حكم مش موجود';
+  if (S.pendingSituation && !situationById(S.pendingSituation)) {
+    return 'الحفظ مستني موقف مش موجود في النسخة دي';
+  }
+  return S;
+}
+
+/* One line for the screens, so a menu never has to reach into the state. */
+function saveLabel(S) {
+  return S.country + ' · السنة ' + S.year + ' · الشهر ' + S.month;
+}
+
 /* ---------------------------------------------------------------- new game */
 
 function newGame(choice) {
@@ -533,6 +678,16 @@ function newGame(choice) {
     approval: SETUP.base_start.approval,
     stability: SETUP.base_start.stability,
     boil: 0,
+    // Suspicion. Deliberately one number and deliberately visible: the whole
+    // corruption system is built on showing the risk before the tap, and a
+    // hidden accumulator that suddenly detonates is a punishment, not a choice.
+    heat: 0,
+    // The coup risk. Not the army itself — the army IS the defence minister's
+    // loyalty, which is a number the player already has a face and a name for.
+    // This is what that loyalty COSTS him while it sits under the line.
+    coupRisk: 0,
+    lastBribe: -ARMY.bribe.once_per_months,
+    lastCrackdown: -CRACKDOWN.cost.once_per_months,
     ap: SETUP.base_start.ap,
     apMax: SETUP.base_start.ap,
 
@@ -552,7 +707,17 @@ function newGame(choice) {
 
     projects: [],
     stoleThisMonth: false,
+    // Everything ever taken, which never goes down. `personal` cannot answer
+    // "did this man steal" — it decays with inflation and gets spent, so a
+    // thief who spent it all would look exactly like an honest president to any
+    // rule that asked. Scandals about money read this instead.
+    stolenTotal: 0,
     lastReshuffle: 0,
+    // The situation waiting for an answer, and the record of what you decided.
+    // The clock cannot advance while one is pending — that is what "every
+    // situation stops time" means in the engine rather than in the screen.
+    pendingSituation: null,
+    sitHistory: [],
     // The governor is deliberately NOT one of the ministers: he cannot be swept
     // out by a reshuffle, and his independence is the only thing standing
     // between the player and the printing press.
@@ -560,6 +725,9 @@ function newGame(choice) {
             lastPrint: -BANK.print.once_per_months, lastSwap: 0 },
     foodPrice: BALANCE.food.price_base,
     lastMonth: null,   // the numbers behind the last tick, for the screens
+    // Only the last few lines are ever shown, and the whole state is written to
+    // the save every month — so an uncapped log would quietly make the save
+    // bigger every month of a twenty-year game.
     log: [],
     dead: null
   };
@@ -753,7 +921,8 @@ function danger(S) {
     approval: S.approval < BALANCE.mood.approval_danger,
     stability: S.stability < BALANCE.mood.stability_danger,
     inflation: S.inflation > BALANCE.inflation.pain_starts_above,
-    treasury: S.treasury < 0
+    treasury: S.treasury < 0,
+    heat: S.heat >= BALANCE.heat.scandal_at
   };
 }
 
@@ -875,6 +1044,412 @@ function blocAverage(S) {
   return w ? t / w : 0;
 }
 
+/* --------------------------------------------------------------- crackdown */
+
+/* The chance the streets are actually cleared. Two inputs and both are things
+   the player chose: the interior minister he appointed, and the government he
+   started with. The setup screen promises the dictator that repression works
+   better for him, so that promise has to be a number in here rather than a
+   sentence on a screen. */
+function crackdownChance(S) {
+  var c = CRACKDOWN.success;
+  var byGov = CRACKDOWN.success_by_government;
+  var gov = (byGov && byGov[S.govId] !== undefined) ? byGov[S.govId] : 0;
+  var v = c.base_pct + ministerComp(S, 'interior') * c.per_competence_point + gov;
+  return Math.max(c.min_pct, Math.min(c.max_pct, v));
+}
+
+function crackdownRefusal(S) {
+  var c = CRACKDOWN.cost, since = S.totalMonths - S.lastCrackdown;
+  if (S.boil < CRACKDOWN.boil_floor) {
+    return 'الشارع هادي — مفيش حاجة تتقمع (الغليان لازم يوصل '
+      + CRACKDOWN.boil_floor + ')';
+  }
+  if (S.ap < c.ap) return 'محتاج ' + c.ap + ' طاقة قرارات';
+  if (S.treasury < c.treasury) return 'الخزينة ناقصة ' + Math.ceil(c.treasury - S.treasury) + 'م';
+  if (since < c.once_per_months) {
+    return 'قمعت من ' + since + ' شهر — استنى ' + (c.once_per_months - since) + ' كمان';
+  }
+  return null;
+}
+
+/* Returns { ok, worked } or a refusal string. A failed crackdown is worse than
+   doing nothing, on purpose: if the worst outcome were "no effect", there would
+   be no reason not to press this every time it is available, and it would stop
+   being a decision. */
+function crackdown(S) {
+  var refusal = crackdownRefusal(S);
+  if (refusal) return refusal;
+  var c = CRACKDOWN.cost;
+  var roll = rngFrom(hashStr(S.seed + '|crackdown|' + S.totalMonths))();
+  var worked = roll * 100 < crackdownChance(S);
+  var out = worked ? CRACKDOWN.win : CRACKDOWN.fail;
+
+  S.ap -= c.ap;
+  S.treasury -= c.treasury;
+  S.lastCrackdown = S.totalMonths;
+
+  S.boil = Math.max(0, S.boil + out.boil);
+  S.approval = clamp(S.approval + out.approval);
+  for (var i = 0; i < GOV_IDS.length; i++) {
+    S.govAppr[GOV_IDS[i]] = clamp(S.govAppr[GOV_IDS[i]] + out.approval);
+  }
+  S.stability = clamp(S.stability + out.stability);
+  addHeat(S, out.heat);
+  return { ok: true, worked: worked };
+}
+
+/* ------------------------------------------------------------------- army */
+
+/* There is no separate "army mood". The player chose that deliberately: the
+   defence minister's loyalty IS the army, so there is one number to watch and
+   it belongs to a man with a name on a screen he can already open. Everything
+   below reads through this one function, so if that ever changes it changes in
+   one place. */
+function army(S) { return S.ministers.defence.loyalty; }
+
+/* The line the officers hold you to, which is not the same line for everyone.
+   A president whose legitimacy comes FROM the army is held to more by it — so
+   the same defence minister who is fine under a republic is a danger under a
+   dictatorship. This is what makes the warning on the setup screen true rather
+   than decorative, and it is the only place the choice of government reaches
+   the barracks. */
+function armyLine(S) {
+  var byGov = ARMY.line_by_government;
+  return (byGov && byGov[S.govId] !== undefined) ? byGov[S.govId] : ARMY.loyalty_line;
+}
+
+/* How fast the risk builds this month. Deeper under the line is faster, which
+   is what makes a small bribe worth taking EARLY rather than a big one later —
+   without the slope, loyalty 39 and loyalty 5 would be the same emergency and
+   there would be nothing to react to. */
+function coupRiskChange(S) {
+  var a = ARMY, gap = armyLine(S) - army(S);
+  return gap > 0 ? gap * a.risk_per_point_below : -a.risk_decay_above;
+}
+
+/* The chance the money never reaches the officers. The defence minister is the
+   middleman, so a man who is barely yours is exactly the man who keeps it —
+   and this number is written on the button before it is pressed, the same rule
+   the treasury screen already follows for the leak. */
+function bribeLostChance(S) {
+  var b = ARMY.bribe, gap = Math.max(0, armyLine(S) - army(S));
+  return Math.min(b.lost_max_pct, b.lost_base_pct + gap * b.lost_per_point_below_line);
+}
+
+function bribeRefusal(S) {
+  var b = ARMY.bribe, since = S.totalMonths - S.lastBribe;
+  if (S.ap < b.ap_cost) return 'محتاج ' + b.ap_cost + ' طاقة قرارات';
+  if (S.personal < b.cost) return 'رصيدك الشخصي ناقص ' + Math.ceil(b.cost - S.personal) + 'م';
+  if (since < b.once_per_months) {
+    return 'دفعت من ' + since + ' شهر — استنى ' + (b.once_per_months - since) + ' كمان';
+  }
+  return null;
+}
+
+/* Returns { ok, lost, gain } or a refusal string. The roll comes from the seed
+   and the month, so leaving the screen and coming back cannot reroll it. */
+function bribeArmy(S) {
+  var refusal = bribeRefusal(S);
+  if (refusal) return refusal;
+  var b = ARMY.bribe;
+  var roll = rngFrom(hashStr(S.seed + '|bribe|' + S.totalMonths))();
+  var lost = roll * 100 < bribeLostChance(S);
+
+  S.ap -= b.ap_cost;
+  S.personal -= b.cost;
+  S.lastBribe = S.totalMonths;
+  // Money that leaves your pocket for the officers gets noticed either way.
+  addHeat(S, b.heat);
+
+  var gain = lost ? b.lost_loyalty_gain : b.loyalty_gain;
+  S.ministers.defence.loyalty = clamp(army(S) + gain);
+  return { ok: true, lost: lost, gain: gain };
+}
+
+/* --------------------------------------------------------------- suspicion */
+
+/* Where this month's suspicion comes from, as separate numbers rather than one
+   total. The design rule of the whole project is that no number reaches the
+   player without a visible reason, and "your suspicion went up 3" is not a
+   reason — "four ministers are talking and your media man is asleep" is. The
+   screen reads exactly this, so the breakdown it shows can never drift from the
+   arithmetic that actually ran. */
+function heatSources(S) {
+  var h = BALANCE.heat, talk = 0, who = 0, i;
+  for (i = 0; i < POST_IDS.length; i++) {
+    var loy = S.ministers[POST_IDS[i]].loyalty;
+    if (loy < h.disloyal_floor) { talk += (h.disloyal_floor - loy) * h.disloyal_coef; who++; }
+  }
+  // The media minister's one job in the game. Measured on what he actually
+  // delivers, not his raw competence, so a man appointed last month cannot bury
+  // a scandal on his first day.
+  var media = Math.max(0, ministerComp(S, 'media') - h.media_floor) * h.media_coef;
+  return { talk: talk, talkers: who, media: media, decay: h.monthly_decay };
+}
+
+function heatChange(S) {
+  var s = heatSources(S);
+  return s.talk - s.media - s.decay;
+}
+
+/* Every one-off add goes through here so the cap is applied in one place. A
+   second `S.heat +=` anywhere else is how a capped number stops being capped. */
+function addHeat(S, n) {
+  S.heat = Math.max(0, Math.min(BALANCE.heat.cap, S.heat + n));
+}
+
+/* ----------------------------------------------------------- situations */
+
+/* Everything a situation is allowed to LOOK at. Two rules make this list the
+   whole interface: a condition naming anything else fails the build, and every
+   probe is a number the player can already find on some screen — so a situation
+   can never fire "because of" something invisible to him. */
+var PROBES = {
+  approval:       function (S) { return S.approval; },
+  stability:      function (S) { return S.stability; },
+  inflation:      function (S) { return S.inflation; },
+  treasury:       function (S) { return S.treasury; },
+  personal:       function (S) { return S.personal; },
+  stolenTotal:    function (S) { return S.stolenTotal; },
+  foodPrice:      function (S) { return S.foodPrice; },
+  boil:           function (S) { return S.boil; },
+  heat:           function (S) { return S.heat; },
+  army:           function (S) { return army(S); },
+  coupRisk:       function (S) { return S.coupRisk; },
+  tax:            function (S) { return S.tax; },
+  subsidy:        function (S) { return S.subsidy; },
+  months:         function (S) { return S.totalMonths; },
+  backing:        function (S) { return parliamentBacking(S); },
+  avgLoyalty:     function (S) { return avgLoyalty(S); },
+  avgCompetence:  function (S) { return avgCompetence(S); },
+  avgService:     function (S) { return avgService(S); },
+  bankIndependence: function (S) { return S.bank.independence; }
+};
+
+/* A probe name may also be "service.<id>", "gov.<id>" or
+   "minister.<post>.loyalty|competence". Resolved here so the data can talk
+   about any service, province or minister without listing them all. */
+function probe(S, key) {
+  if (PROBES[key]) return PROBES[key](S);
+  var bits = key.split('.');
+  if (bits[0] === 'service' && BALANCE.services[bits[1]]) return nationalLevel(S, bits[1]);
+  if (bits[0] === 'gov' && BALANCE.governorates[bits[1]]) return S.govAppr[bits[1]];
+  if (bits[0] === 'minister' && S.ministers[bits[1]]) {
+    return bits[2] === 'competence' ? S.ministers[bits[1]].competence
+                                    : S.ministers[bits[1]].loyalty;
+  }
+  return null;                       // unknown — check.py refuses to build
+}
+
+function probeExists(S, key) { return probe(S, key) !== null; }
+
+function conditionHolds(S, c) {
+  var v = probe(S, c[0]);
+  if (v === null) return false;
+  if (c[1] === '<') return v < c[2];
+  if (c[1] === '>') return v > c[2];
+  if (c[1] === '<=') return v <= c[2];
+  if (c[1] === '>=') return v >= c[2];
+  if (c[1] === '==') return v === c[2];
+  return false;
+}
+
+/* Everything a choice is allowed to CHANGE. Same deal in reverse: an effect
+   naming anything else fails the build, so a choice can never silently do
+   nothing — which for a card the player paid AP for is the worst outcome. */
+var EFFECTS = {
+  approval:  function (S, n) { S.approval = clamp(S.approval + n);
+                               for (var i = 0; i < GOV_IDS.length; i++)
+                                 S.govAppr[GOV_IDS[i]] = clamp(S.govAppr[GOV_IDS[i]] + n); },
+  stability: function (S, n) { S.stability = clamp(S.stability + n); },
+  boil:      function (S, n) { S.boil = Math.max(0, S.boil + n); },
+  heat:      function (S, n) { addHeat(S, n); },
+  army:      function (S, n) { S.ministers.defence.loyalty = clamp(army(S) + n); },
+  coupRisk:  function (S, n) { S.coupRisk = Math.max(0, Math.min(ARMY.risk_cap, S.coupRisk + n)); },
+  treasury:  function (S, n) { S.treasury += n; },
+  personal:  function (S, n) { S.personal = Math.max(0, S.personal + n); },
+  inflation: function (S, n) { S.inflation = Math.max(0, S.inflation + n); },
+  tax:       function (S, n) { S.tax = clamp(S.tax + n, BALANCE.levers.tax.min, BALANCE.levers.tax.max); },
+  subsidy:   function (S, n) { S.subsidy = clamp(S.subsidy + n, BALANCE.levers.subsidy.min,
+                                                 BALANCE.levers.subsidy.max); },
+  foodPrice: function (S, n) { S.foodPrice = clamp(S.foodPrice + n); },
+  ap:        function (S, n) { S.ap = Math.max(0, S.ap + n); },
+  // Whole-cabinet nudges: the situations that involve "the government" rather
+  // than one man.
+  cabinetLoyalty:    function (S, n) { for (var i = 0; i < POST_IDS.length; i++)
+                                         S.ministers[POST_IDS[i]].loyalty = clamp(S.ministers[POST_IDS[i]].loyalty + n); },
+  cabinetCompetence: function (S, n) { for (var i = 0; i < POST_IDS.length; i++)
+                                         S.ministers[POST_IDS[i]].competence = clamp(S.ministers[POST_IDS[i]].competence + n); },
+  allPct:    function (S, n) { for (var i = 0; i < SERVICE_IDS.length; i++)
+                                 S.pct[SERVICE_IDS[i]] = clamp(S.pct[SERVICE_IDS[i]] + n, 0, 160); },
+  // Printing straight from a card, through the bank's own rule so the governor
+  // and the inflation cost still apply.
+  printCap:  function (S) { var was = S.bank.lastPrint;
+                            S.bank.lastPrint = -BANK.print.once_per_months;
+                            var why = printMoney(S, printCap(S));
+                            if (why) S.bank.lastPrint = was; }
+};
+
+/* "pct.<service>", "build.<service>.<gov>" and "minister.<post>.loyalty" are
+   resolved the same way conditions are. */
+function applyEffect(S, key, n) {
+  if (EFFECTS[key]) { EFFECTS[key](S, n); return true; }
+  var bits = key.split('.');
+  if (bits[0] === 'pct' && BALANCE.services[bits[1]]) {
+    S.pct[bits[1]] = clamp(S.pct[bits[1]] + n, 0, 160); return true;
+  }
+  if (bits[0] === 'build' && BALANCE.services[bits[1]] && BALANCE.governorates[bits[2]]) {
+    S.fac[bits[2]][bits[1]] += n;
+    S.ask[bits[1]] += BALANCE.services[bits[1]].adds_monthly * n;
+    return true;
+  }
+  if (bits[0] === 'minister' && S.ministers[bits[1]]) {
+    var f = bits[2] === 'competence' ? 'competence' : 'loyalty';
+    S.ministers[bits[1]][f] = clamp(S.ministers[bits[1]][f] + n);
+    return true;
+  }
+  return false;                      // unknown — check.py refuses to build
+}
+
+function situationById(id) {
+  for (var i = 0; i < SITUATIONS.situations.length; i++) {
+    if (SITUATIONS.situations[i].id === id) return SITUATIONS.situations[i];
+  }
+  return null;
+}
+
+/* Has this one fired recently enough that it should stay quiet? */
+function onCooldown(S, sit) {
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if (S.sitHistory[i].id === sit.id
+      && S.totalMonths - S.sitHistory[i].month < sit.cooldown_months) return true;
+  }
+  return false;
+}
+
+/* A scandal is an ordinary situation carrying kind:"scandal". It gets no new
+   machinery — the same conditions, the same choices, the same "time stops and
+   there is no way out" — because everything already built and tested for
+   situations is exactly what a scandal needs. What it gets is its own rate gate
+   and first refusal, and that is the whole difference. */
+function kindOf(sit) { return sit.kind || 'situation'; }
+
+function rateFor(kind) {
+  return kind === 'scandal' ? SITUATIONS.scandal_rate : SITUATIONS.rate;
+}
+
+function situationsThisYear(S, kind) {
+  var n = 0;
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if (kind && (S.sitHistory[i].kind || 'situation') !== kind) continue;
+    if (S.totalMonths - S.sitHistory[i].month < 12) n++;
+  }
+  return n;
+}
+
+/* The month the last one of this kind was answered. Derived from the history
+   rather than kept in its own field: a second copy of the same fact is a second
+   thing to forget to update, and forgetting this one would silently remove the
+   only limit on how often the game interrupts. */
+function lastOfKind(S, kind) {
+  var m = 0;
+  for (var i = 0; i < S.sitHistory.length; i++) {
+    if ((S.sitHistory[i].kind || 'situation') !== kind) continue;
+    if (S.sitHistory[i].month > m) m = S.sitHistory[i].month;
+  }
+  return m;
+}
+
+/* The gate. The player asked for every situation to stop the clock, so how
+   OFTEN one may fire is the only thing keeping the game from nagging — which
+   makes these numbers the most important ones in the file. Scandals count
+   separately, so a bad year of ordinary crises cannot swallow the consequence
+   of being corrupt; check.py refuses to build if the two gates together let
+   through more interruptions than a year can carry. */
+function situationAllowed(S, kind) {
+  var r = rateFor(kind);
+  if (S.pendingSituation) return false;
+  if (S.totalMonths < r.quiet_months_at_start) return false;
+  if (S.totalMonths - lastOfKind(S, kind) < r.min_gap_months) return false;
+  if (situationsThisYear(S, kind) >= r.max_per_year) return false;
+  return true;
+}
+
+/* Picks one of a kind, deterministically from the seed and the month. Weighted,
+   and only from the ones whose conditions actually hold right now. */
+function pickOfKind(S, kind) {
+  if (!situationAllowed(S, kind)) return null;
+  var rnd = rngFrom(hashStr(S.seed + '|' + kind + '|' + S.totalMonths));
+  if (rnd() > rateFor(kind).chance_per_month) return null;
+
+  var pool = [], total = 0, i, j;
+  for (i = 0; i < SITUATIONS.situations.length; i++) {
+    var sit = SITUATIONS.situations[i];
+    if (kindOf(sit) !== kind) continue;
+    if (onCooldown(S, sit)) continue;
+    var ok = true;
+    for (j = 0; j < sit.when.length; j++) {
+      if (!conditionHolds(S, sit.when[j])) { ok = false; break; }
+    }
+    if (!ok) continue;
+    pool.push(sit);
+    total += sit.weight;
+  }
+  if (!pool.length) return null;
+
+  var roll = rnd() * total;
+  for (i = 0; i < pool.length; i++) {
+    roll -= pool[i].weight;
+    if (roll <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+/* Scandals first. A president whose suspicion is over the line should hear
+   about that before he hears about the water, or the number stops meaning
+   anything. */
+function pickSituation(S) {
+  return pickOfKind(S, 'scandal') || pickOfKind(S, 'situation');
+}
+
+/* Why a choice cannot be taken, or null. The screen shows this instead of the
+   price, so a locked option always says what is missing. */
+function choiceRefusal(S, sit, index) {
+  var ch = sit.choices[index];
+  if (!ch) return 'الاختيار ده مش موجود';
+  // Every shortfall, not just the first one. A choice that needs both energy
+  // and money used to name only the energy — so the player spends a month
+  // getting it, comes back, and is refused again for a reason he was never
+  // told. One trip, one full answer.
+  var c = ch.cost || {}, missing = [];
+  if (c.ap && S.ap < c.ap) missing.push('ناقصك ' + (c.ap - S.ap) + ' طاقة');
+  if (c.treasury && S.treasury < c.treasury) missing.push('ناقص الخزينة ' + Math.ceil(c.treasury - S.treasury) + 'م');
+  if (c.personal && S.personal < c.personal) missing.push('ناقص رصيدك ' + Math.ceil(c.personal - S.personal) + 'م');
+  return missing.length ? missing.join(' · ') : null;
+}
+
+/* Answering. Returns null, or the reason it was refused — and a refused answer
+   changes nothing at all, including the pending situation. */
+function answerSituation(S, index) {
+  if (!S.pendingSituation) return 'مفيش موقف مفتوح';
+  var sit = situationById(S.pendingSituation);
+  if (!sit) return 'الموقف ده مش موجود';
+  var refusal = choiceRefusal(S, sit, index);
+  if (refusal) return refusal;
+
+  var ch = sit.choices[index], c = ch.cost || {}, k;
+  if (c.ap) S.ap -= c.ap;
+  if (c.treasury) S.treasury -= c.treasury;
+  if (c.personal) S.personal -= c.personal;
+  for (k in ch.effects) applyEffect(S, k, ch.effects[k]);
+
+  S.sitHistory.push({ id: sit.id, kind: kindOf(sit), month: S.totalMonths,
+                      choice: index, nm: ch.nm });
+  S.pendingSituation = null;
+  return null;
+}
+
 /* ------------------------------------------------------------- the pieces */
 
 function updateServices(S, deficit) {
@@ -931,6 +1506,10 @@ function updateMood(S) {
 function tickMonth(S) {
   var events = [];
   if (S.dead) return events;
+  // A pending decision freezes the world. Without this the clock would keep
+  // running behind the card and the player would answer a month that is no
+  // longer the month he was shown.
+  if (S.pendingSituation) return events;
 
   var nf = BALANCE.inflation, fd = BALANCE.food, inc = BALANCE.income, st = BALANCE.stability;
 
@@ -991,6 +1570,23 @@ function tickMonth(S) {
   updateServices(S, deficit);
   updateMood(S);
 
+  // 9b. suspicion, before stability so the stability line reads this month's
+  // value rather than last month's.
+  addHeat(S, heatChange(S));
+
+  // 9c. the army. Same order and the same reason: stability must read the risk
+  // as it stands this month, not as it stood last month.
+  var riskBefore = S.coupRisk;
+  S.coupRisk = Math.max(0, Math.min(ARMY.risk_cap, S.coupRisk + coupRiskChange(S)));
+  // Told at every quarter, so the ending can never arrive from a number the
+  // player was never shown. Same rule the boil already follows.
+  var rstep = ARMY.risk_cap / ARMY.warn_steps;
+  if (Math.floor(S.coupRisk / rstep) > Math.floor(riskBefore / rstep)
+    && S.coupRisk < ARMY.risk_cap) {
+    events.push({ type: 'army', pct: Math.round(S.coupRisk / ARMY.risk_cap * 100),
+                  loyalty: Math.round(army(S)) });
+  }
+
   // 10-11. stability
   var inflPain = pains(S).inflation;
   var opposition = Math.max(0, st.opposition_threshold - S.approval) * st.opposition_coef;
@@ -1000,8 +1596,16 @@ function tickMonth(S) {
   // picture of four parties.
   var bk = PARLIAMENT.backing;
   var noBacking = Math.max(0, bk.floor - parliamentBacking(S)) * bk.stability_coef;
+  // A president under suspicion is a weaker president every single month, not
+  // only on the day the scandal lands. Without this, suspicion would be inert
+  // between scandals and the player would have no reason to watch it.
+  var suspicion = S.heat * BALANCE.heat.stability_coef;
+  // An army that is not yours makes the state wobble every month, not only on
+  // the day it moves. Without this the risk would be inert until the ending,
+  // and a player could ignore it for years at no cost.
+  var barracks = S.coupRisk * ARMY.stability_coef;
   var stTarget = clamp(st.base - opposition - inflPain * st.inflation_coef
-    - disloyal - noBacking);
+    - disloyal - noBacking - suspicion - barracks);
   S.stability += (stTarget - S.stability) * st.smoothing;
 
   // 14. the boil, and the two endings
@@ -1016,7 +1620,12 @@ function tickMonth(S) {
   } else {
     S.boil = Math.max(0, S.boil - md.boil_cooldown);
   }
-  if (S.boil >= md.boil_cap) {
+  if (S.coupRisk >= ARMY.risk_cap) {
+    // Checked before the street and before the economy: when the army moves it
+    // does not wait for either of them.
+    S.dead = 'coup';
+    events.push({ type: 'end', reason: 'coup', minister: S.ministers.defence.name });
+  } else if (S.boil >= md.boil_cap) {
     S.dead = 'riot';
     events.push({ type: 'end', reason: 'riot', gov: worstGovernorate(S) });
   } else if (S.inflation >= nf.collapse_at) {
@@ -1036,6 +1645,13 @@ function tickMonth(S) {
   for (var q = 0; q < POST_IDS.length; q++) S.ministers[POST_IDS[q]].months += 1;
   S.ap = S.apMax;
   S.stoleThisMonth = false;
+
+  // Last of all, so a situation reads the month the player is about to see.
+  var sit = pickSituation(S);
+  if (sit) {
+    S.pendingSituation = sit.id;
+    events.push({ type: 'situation', id: sit.id });
+  }
 
   // Keep the arithmetic so the screens can show the player where a number came
   // from. Rule of the design doc: no number without a visible reason.
@@ -1105,9 +1721,15 @@ function stealFromTreasury(S, amount) {
 
   S.treasury -= amount;
   S.personal += amount;
+  S.stolenTotal += amount;
   S.stoleThisMonth = true;
+  // Suspicion rises whether or not he talks. Only tying it to the leak would
+  // mean a lucky thief is an invisible one, and then the honest way to play is
+  // to steal constantly and hope.
+  addHeat(S, amount / 100 * BALANCE.heat.steal_per_100m);
 
   if (roll * 100 < chance) {
+    addHeat(S, BALANCE.heat.leak_extra);
     S.approval = clamp(S.approval - c.approval_hit);
     S.stability = clamp(S.stability - c.stability_hit);
     for (var i = 0; i < GOV_IDS.length; i++) {
@@ -1159,6 +1781,10 @@ function printMoney(S, millions) {
   if (refusal) return refusal;
   S.treasury += millions * S.priceIndex;
   S.inflation += printInflation(S, millions);
+  // Legal on paper, and still something people ask about. Cheaper than stealing
+  // per pound on purpose: if printing cost the same suspicion, nobody would ever
+  // steal and half the treasury screen would be dead content.
+  addHeat(S, millions / 100 * BALANCE.heat.print_per_100m);
   S.bank.lastPrint = S.totalMonths;
   return null;
 }
@@ -1187,6 +1813,9 @@ function swapGovernor(S) {
   var names = MINISTERS.candidate_names;
   S.ap -= sw.ap_cost;
   S.stability = clamp(S.stability - sw.stability_hit);
+  // Putting your own man over the money is the move that looks worst from
+  // outside, whatever you do with him afterwards.
+  addHeat(S, BALANCE.heat.governor_swap);
   S.bank = {
     name: names[Math.floor(rnd() * names.length)],
     independence: Math.round(sw.new_independence[0]
@@ -1378,6 +2007,149 @@ function arText(s) {
 function el(id) { return document.getElementById(id); }
 
 var S = null;                 // the game state, null while in setup
+
+/* ------------------------------------------------------------------ menu */
+/* Which of the three top-level screens is showing, and which page of the menu.
+   Kept as two plain strings rather than a stack: there are only three, and a
+   stack here would be machinery for a problem that does not exist. */
+var view = 'menu';            // 'menu' | 'setup' | 'game'
+var menuPage = 'main';        // 'main' | 'settings' | 'about'
+
+var SAVE_KEY = 'الحكم:save';
+var PREF_KEY = 'الحكم:prefs';
+var prefs = { speed: 0 };
+
+/* Storage can be missing, full, or switched off — a private window, a browser
+   with site data blocked, a WebView that came back without it. Every touch goes
+   through these two so a game NEVER fails to start because it could not save.
+   The rule is: saving is a convenience, playing is the product. */
+function storeGet(key) {
+  try { return window.localStorage.getItem(key); } catch (e) { return null; }
+}
+function storeSet(key, value) {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+    return true;
+  } catch (e) { return false; }
+}
+
+function loadPrefs() {
+  var raw = storeGet(PREF_KEY);
+  if (!raw) return;
+  try {
+    var p = JSON.parse(raw);
+    if (p && typeof p.speed === 'number' && p.speed >= 0 && p.speed < SPEEDS.length) {
+      prefs.speed = p.speed;
+    }
+  } catch (e) { /* a broken preferences file is not worth a broken game */ }
+}
+function savePrefs() { storeSet(PREF_KEY, JSON.stringify(prefs)); }
+
+/* Written on every redraw of the game, which is after every month and after
+   every action. Putting it anywhere else would mean one branch of the click
+   handler forgetting it, and the player losing exactly the move he just made. */
+function persist() {
+  if (!S) return;
+  // The save dies with the president. Without this, dying is just "close the
+  // app and open it again" — and the whole reason the randomness is tied to the
+  // seed is that a situation must not be re-rollable.
+  if (S.dead) { storeSet(SAVE_KEY, null); return; }
+  storeSet(SAVE_KEY, saveBlob(S));
+}
+
+/* Returns the saved state, or null. A save this build cannot use is DELETED
+   here rather than left to fail again on the next launch. */
+function readSave() {
+  var raw = storeGet(SAVE_KEY);
+  if (!raw) return null;
+  var out = loadBlob(raw);
+  if (typeof out === 'string') { storeSet(SAVE_KEY, null); return null; }
+  return out;
+}
+
+function menuView() {
+  if (menuPage === 'settings') return settingsView();
+  if (menuPage === 'about') return aboutView();
+
+  var saved = readSave();
+  var h = '<button class="mbtn go" data-menu="new">🏛️ ابدأ فترة حكم جديدة'
+    + '<span>تختار دولتك ونظام حكمك وطبيعة مجتمعك</span></button>';
+  h += '<button class="mbtn" data-menu="resume"' + (saved ? '' : ' disabled') + '>'
+    + '▶️ كمّل فترة حكم'
+    + '<span>' + (saved ? arText(esc(saveLabel(saved))) : 'مفيش فترة حكم محفوظة')
+    + '</span></button>';
+  h += '<button class="mbtn" data-menu="settings">⚙️ الإعدادات'
+    + '<span>سرعة الوقت · الحفظ · عن اللعبة</span></button>';
+  h += '<button class="mbtn" data-menu="exit">🚪 الخروج<span>يقفل التطبيق</span></button>';
+  h += '<div class="mnote">اللعبة بتحفظ نفسها كل شهر لوحدها. '
+    + 'والحفظ بيتمسح لما حكمك ينتهي — مفيش رجوع في الوقت.</div>';
+  return h;
+}
+
+function settingsView() {
+  var h = '<div class="mrow2"><div class="lb2">سرعة الوقت<span>اللي اللعبة بتبدأ بيها</span></div>'
+    + '<div class="seg">';
+  var names = ['×١', '×٢', '×٣'];
+  for (var i = 0; i < SPEEDS.length; i++) {
+    h += '<button class="' + (prefs.speed === i ? 'on' : '') + '" data-speed="' + i + '">'
+      + names[i] + '</button>';
+  }
+  h += '</div></div>';
+
+  var saved = readSave();
+  h += '<div class="mrow2"><div class="lb2">فترة الحكم المحفوظة<span>'
+    + (saved ? arText(esc(saveLabel(saved))) : 'مفيش حاجة محفوظة') + '</span></div></div>';
+  h += '<button class="mbtn" data-menu="wipe"' + (saved ? '' : ' disabled') + '>'
+    + '🗑️ امسح الحفظ وابدأ من الأول<span>هيسألك تأكيد الأول</span></button>';
+
+  // Said plainly instead of shipping a language menu that does nothing. The
+  // whole game's text lives inside the code; English is its own piece of work,
+  // not a switch.
+  h += '<div class="mrow2"><div class="lb2">اللغة'
+    + '<span>عربي — الإنجليزي في بند جاي، لأنه بيلمس كل سطر نص في اللعبة</span></div></div>';
+  h += '<button class="mbtn" data-menu="about">ℹ️ عن اللعبة<span>النسخة ورقم البناء</span></button>';
+  h += '<button class="mbtn" data-menu="main">⟶ رجوع</button>';
+  return h;
+}
+
+function aboutView() {
+  return '<div class="mrow2"><div class="lb2">الحُكم<span>لعبة إدارة سياسية</span></div></div>'
+    + '<div class="mrow2"><div class="lb2">رقم البناء<span>' + BUILD + '</span></div></div>'
+    + '<div class="mnote">رقم البناء ده هو اللي الحفظ بيتربط بيه. أي رفعة ملفات '
+    + 'جديدة بتغيّره، والحفظ القديم بيترفض بدل ما يشتغل بأرقام نص/نص.</div>'
+    + '<button class="mbtn" data-menu="settings">⟶ رجوع</button>';
+}
+
+function drawMenu() { el('menuBody').innerHTML = menuView(); }
+
+/* The only place the three top-level screens are shown and hidden. Anywhere
+   else doing it by hand is how two of them end up visible at once. */
+function showView(v) {
+  view = v;
+  el('menu').classList[v === 'menu' ? 'remove' : 'add']('hidden');
+  el('setup').classList[v === 'setup' ? 'remove' : 'add']('hidden');
+  el('game').classList[v === 'game' ? 'remove' : 'add']('hidden');
+  // Coming back to the menu always lands on its front page. Leaving a game and
+  // finding yourself inside the settings is the kind of small wrongness that
+  // makes an app feel unfinished.
+  if (v === 'menu') { menuPage = 'main'; drawMenu(); }
+  if (v === 'setup') drawSetup();
+  if (v === 'game') drawGame();
+}
+
+/* Closing the app is the one thing a page cannot do to itself, so it is done by
+   the Android shell through this bridge. The name here and the name in
+   MainActivity.java must match — check_android.py compares them, because a
+   mismatch leaves a button that looks alive and does nothing. */
+function exitApp() {
+  if (window.TheGame && typeof window.TheGame.exitApp === 'function') {
+    window.TheGame.exitApp();
+    return true;
+  }
+  return false;
+}
+
 var running = false;
 var speed = 0;
 var timer = null;
@@ -1454,7 +2226,14 @@ function summaryView() {
     + '<div class="srow"><span>الخزينة</span><span class="v">' + ar(BALANCE.start.treasury) + 'م</span></div>'
     + '</div>';
   if (st.gov && st.gov.id === 'republic') h += '<div class="flag">🗳️ أول انتخابات بعد ٤٨ شهر. لو رضاك وقتها تحت ٤٠، خرجت.</div>';
-  if (st.gov && st.gov.id === 'dictator') h += '<div class="flag">⚠️ رضا الجيش تحت ٣٠ = انقلاب فوري. راقب وزير الدفاع.</div>';
+  // The number here is read from the data, not written down: the army line
+  // moved once already and this line kept quoting the old one for a whole item
+  // because it lives in the game and the check was only reading setup.json.
+  if (st.gov && st.gov.id === 'dictator') {
+    h += '<div class="flag">⚠️ مفيش مؤشر اسمه الجيش — ولاء وزير الدفاع هو الجيش. '
+      + 'وخطك ' + ar(ARMY.line_by_government.dictator) + ' مش '
+      + ar(ARMY.line_by_government.republic) + ': شرعيتك منهم، فبيتوقعوا أكتر.</div>';
+  }
   if (st.gov && st.gov.id === 'monarchy') h += '<div class="flag">👑 مفيش انتخابات ومفيش مدة. بتفضل لحد ما يشيلوك.</div>';
   if (st.soc && st.soc.id === 'divided') h += '<div class="flag">⚡ الوضع الصعب. ما تلعبهوش أول مرة.</div>';
   return h;
@@ -1463,7 +2242,10 @@ function summaryView() {
 function setupFoot() {
   var st = setupState;
   var ok = st.step === 1 ? !!st.gov : st.step === 2 ? !!st.soc : true;
-  return (st.step > 0 ? '<button class="btn ghost" data-nav="back">⟶ رجوع</button>' : '')
+  // The back button exists on the first step too now, because there is
+  // somewhere behind it: the menu.
+  return '<button class="btn ghost" data-nav="back">⟶ '
+    + (st.step > 0 ? 'رجوع' : 'القايمة') + '</button>'
     + '<button class="btn" data-nav="next"' + (ok ? '' : ' disabled') + '>'
     + (st.step === 3 ? 'ابدأ الحُكم ⟵' : 'التالي ⟵') + '</button>';
 }
@@ -1679,6 +2461,27 @@ function openBuild(id, only) {
    Getting this wrong means the phone's back key throws the player out of a game
    that is still running — the one navigation bug you cannot apologise for. */
 function onAndroidBack() {
+  // On the menu the press means "leave the app", so the shell handles it.
+  if (view === 'menu') {
+    if (menuPage !== 'main') {
+      menuPage = (menuPage === 'about') ? 'settings' : 'main';
+      drawMenu();
+      return true;
+    }
+    return false;
+  }
+  // In the wizard it walks back a step, and off the first step to the menu —
+  // never out of the app, which would lose the choices already made.
+  if (view === 'setup') {
+    if (setupState.step > 0) { setupState.step--; drawSetup(); }
+    else showView('menu');
+    return true;
+  }
+  // A pending situation comes first and swallows the press. Returning true with
+  // nothing done is deliberate: the shell must believe the page handled it, or
+  // it backgrounds the app — which would be an escape hatch out of the one
+  // decision the game says is compulsory.
+  if (S && S.pendingSituation) return true;
   var ovl = el('ovl');
   if (ovl && !ovl.classList.contains('hidden')) { closeSheet(); return true; }
   if (S && backScreen()) return true;
@@ -1772,14 +2575,19 @@ function drawTop() {
   var g = govOf(S), dg = danger(S);
   el('date').innerHTML = 'الشهر <b>' + ar(S.month) + '</b> · السنة <b>' + ar(S.year) + '</b>';
   el('who').textContent = g.ic + ' ' + S.ruler + ' — ' + S.country;
+  // Suspicion sits in the bar with the other four rather than on one screen:
+  // it is the only number that can end a game while the player is looking at
+  // something else, so it has to be where he already looks.
+  var hc = BALANCE.heat;
   var m = [
     ['الرضا', S.approval, meterColor(S.approval), ar(S.approval), dg.approval],
     ['الثبات', S.stability, meterColor(S.stability), ar(S.stability), dg.stability],
     ['التضخم', Math.min(100, S.inflation * 2), dg.inflation ? 'var(--bad)' : 'var(--good)', ar(S.inflation) + '٪', dg.inflation],
+    ['الشبهة', S.heat / hc.cap * 100, dg.heat ? 'var(--bad)' : S.heat > hc.scandal_at * 0.6 ? 'var(--warn)' : 'var(--good)', ar(S.heat), dg.heat],
     ['الطاقة', S.ap / S.apMax * 100, 'var(--info)', ar(S.ap) + '/' + ar(S.apMax), false]
   ];
   el('meters').innerHTML = m.map(function (x) {
-    return '<div class="mtr' + (x[4] ? ' danger' : '') + '"><span class="lb">' + x[0] + '</span>'
+    return '<div class="mtr' + (x[4] ? ' alarm' : '') + '"><span class="lb">' + x[0] + '</span>'
       + '<span class="vl" style="color:' + x[2] + '">' + x[3] + '</span>'
       + '<div class="bar"><div class="fl" style="width:' + Math.max(0, Math.min(100, x[1])) + '%;background:' + x[2] + '"></div></div></div>';
   }).join('');
@@ -1910,6 +2718,8 @@ function bankBody() {
     + arDec(printInflation(S, cap), 1) + '٪</b></div>'
     + '<div class="krow"><span>يعني التضخم هيبقى</span><b style="color:var(--bad)">'
     + arDec(S.inflation + printInflation(S, cap), 1) + '٪</b></div>'
+    + '<div class="krow"><span>وهتزوّد الشبهة</span><b style="color:var(--bad)">+'
+    + arDec(cap / 100 * BALANCE.heat.print_per_100m, 1) + '</b></div>'
     + '<div class="krow"><span class="sub">الفلوس دي مش بتيجي من حتة — بتيجي من جيب كل واحد '
     + 'ماسك فلوس في البلد، ومن رصيدك الشخصي كمان.</span></div></div>'
     + '<button class="danger" data-print="1"' + (refusal ? ' disabled' : '') + '>'
@@ -1932,7 +2742,8 @@ function bankBody() {
     + '<button class="danger" data-governor="1"' + (swapNo ? ' disabled' : '') + '>'
     + '⚖️ عيّن محافظ من عندك'
     + '<span>' + (swapNo ? arText(swapNo)
-      : 'بيكلّف ' + ar(sw.ap_cost) + ' طاقة · −' + ar(sw.stability_hit) + ' ثبات · '
+      : 'بيكلّف ' + ar(sw.ap_cost) + ' طاقة · −' + ar(sw.stability_hit) + ' ثبات · شبهة +'
+        + ar(BALANCE.heat.governor_swap) + ' · '
         + 'ومش هينفع تاني قبل ' + ar(sw.cooldown_months) + ' شهر')
     + '</span></button>';
   return h;
@@ -2038,6 +2849,14 @@ function ministerBody(post) {
   // The treasury is not a tab any more: it is this man's desk. Everything that
   // moves money lives under the minister the money passes through.
   if (post === 'finance') h += treasuryPanel();
+  // And the army is the defence minister's desk. It is not a tab and not a
+  // meter: the player decided his loyalty IS the army, so the one lever on it
+  // belongs on his screen and nowhere else.
+  if (post === 'defence') h += barracksPanel();
+  // Repression is his desk for the same reason the printing press is the
+  // governor's: the man who carries the order out is the man the player has to
+  // look at while he gives it.
+  if (post === 'interior') h += streetPanel();
   // And the cabinet is the prime minister's desk: from here you sack any one of
   // them, or change the whole government in one move.
   if (post === 'pm') h += pmPanel();
@@ -2062,6 +2881,29 @@ function ministerEffect(post) {
   if (post === 'finance') {
     return 'كفاءته هي نسبة تحصيل الضرايب. بكفاءته الحالية الدولة بتحصّل '
       + ar(ministerComp(S, 'finance')) + '٪ من المستحق — الباقي بيضيع.';
+  }
+  if (post === 'defence') {
+    var risk = coupRiskChange(S);
+    return army(S) >= armyLine(S)
+      ? 'ولاؤه هو الجيش — مفيش مؤشر تاني. دلوقتي ' + ar(army(S)) + ' وخط الخطر '
+        + ar(armyLine(S)) + '، يعني الجيش معاك وخطر الانقلاب بينزل '
+        + arDec(-risk, 1) + ' كل شهر.'
+      : 'ولاؤه هو الجيش — مفيش مؤشر تاني. دلوقتي ' + ar(army(S)) + ' وده تحت خط الخطر ('
+        + ar(armyLine(S)) + ') بـ' + ar(armyLine(S) - army(S))
+        + '، يعني خطر الانقلاب بيزيد ' + arDec(risk, 1) + ' كل شهر.';
+  }
+  if (post === 'interior') {
+    return 'كفاءته هي نسبة نجاح القمع — هو اللي بينزّل الأمن على الأرض. '
+      + 'دلوقتي ' + ar(crackdownChance(S)) + '٪، ونظام حكمك بيزوّدها أو بينقّصها.';
+  }
+  if (post === 'media') {
+    var hc = BALANCE.heat, cut = heatSources(S).media;
+    return cut > 0
+      ? 'شغلانته إنه ينزّل الشبهة. بكفاءته الحالية بيشيل ' + arDec(cut, 1)
+        + ' شبهة كل شهر — والوزرا اللي ولاؤهم واطي بيطلّعوا '
+        + arDec(heatSources(S).talk, 1) + '.'
+      : 'كفاءته تحت ' + ar(hc.media_floor) + ' فمش بينزّل ولا شبهة. '
+        + 'ده المنصب الوحيد اللي شغله كله على الشبهة.';
   }
   return 'تأثيره لسه ما اتوصّلش في اللعبة — جاي في البنود الجاية.';
 }
@@ -2139,8 +2981,12 @@ function treasuryPanel() {
     + '<button class="danger" data-steal="1"' + (refusal ? ' disabled' : '') + '>'
     + '🕳️ خد ' + ar(mx) + 'م لنفسك'
     + '<span>' + (refusal ? arText(refusal)
+      // Two prices, both before the tap: the roll he might lose, and the
+      // suspicion he pays whether he loses it or not.
       : 'احتمال وزير ماليتك يسرّبك: ' + ar(leakChance(S, mx)) + '٪ — ولاؤه '
-        + ar(S.ministers.finance.loyalty))
+        + ar(S.ministers.finance.loyalty) + ' · شبهة +'
+        + arDec(mx / 100 * BALANCE.heat.steal_per_100m, 1)
+        + ' (وكمان +' + ar(BALANCE.heat.leak_extra) + ' لو سرّبك)')
     + '</span></button>';
   return h;
 }
@@ -2245,6 +3091,136 @@ function deltaTag(d) {
     + (d > 0 ? '▲+' : '▼') + ar(Math.abs(d)) + '</span>';
 }
 
+/* ---- the street, on the interior minister's desk ------------------------ */
+
+/* The whole trade on one card. The failure case is spelled out next to the
+   success case on purpose: a button that only advertises what it does when it
+   works is not a priced decision. */
+function streetPanel() {
+  var c = CRACKDOWN, no = crackdownRefusal(S), md = BALANCE.mood;
+  var pct = Math.round(S.boil / md.boil_cap * 100);
+
+  var h = '<h3 class="sech">الشارع</h3>'
+    + '<div class="card">'
+    + '<div class="krow"><span>الغليان</span><b style="color:'
+    + (pct >= 60 ? 'var(--bad)' : pct >= 30 ? 'var(--warn)' : 'var(--good)') + '">'
+    + ar(pct) + '٪</b></div>'
+    + '<div class="krow"><span>بيفجّر شغب عند</span><b>' + ar(md.boil_cap) + '</b></div>'
+    + '<div class="krow"><span>احتمال نجاح القمع</span><b>' + ar(crackdownChance(S)) + '٪</b></div>'
+    + '<div class="krow"><span class="sub">الغليان بيعلى لما الرضا والثبات يبقوا تحت '
+    + 'الخط مع بعض، وبيهدا لوحده ' + ar(md.boil_cooldown) + ' في الشهور الكويسة.'
+    + '</span></div></div>'
+    + '<div class="calc2">'
+    + '<div class="cr2"><span>لو نجح</span><b style="color:var(--good)">غليان '
+    + ar(c.win.boil) + ' · ثبات +' + ar(c.win.stability) + '</b></div>'
+    + '<div class="cr2"><span>وبتدفع</span><b style="color:var(--bad)">رضا '
+    + ar(c.win.approval) + ' · شبهة +' + ar(c.win.heat) + '</b></div>'
+    + '<div class="cr2"><span>لو فشل</span><b style="color:var(--bad)">غليان +'
+    + ar(c.fail.boil) + ' · رضا ' + ar(c.fail.approval) + ' · ثبات '
+    + ar(c.fail.stability) + ' · شبهة +' + ar(c.fail.heat) + '</b></div>'
+    + '</div>'
+    + '<button class="danger" data-crack="1"' + (no ? ' disabled' : '') + '>'
+    + '🚔 انزل الأمن على الشارع'
+    + '<span>' + (no ? arText(no)
+      : 'بيكلّف ' + ar(c.cost.ap) + ' طاقة و' + ar(c.cost.treasury) + 'م · '
+        + 'ومش هينفع تاني قبل ' + ar(c.cost.once_per_months) + ' شهور')
+    + '</span></button>';
+  return h;
+}
+
+/* ---- the army, on the defence minister's desk --------------------------- */
+
+/* One card, two halves: what the risk is doing to you every month, and the one
+   thing you can do about it. Both halves are priced before the tap — the money,
+   the energy, AND the chance the money never arrives. */
+function barracksPanel() {
+  var a = ARMY, risk = coupRiskChange(S), no = bribeRefusal(S);
+  var pct = Math.round(S.coupRisk / a.risk_cap * 100);
+  var months = risk > 0 ? Math.ceil((a.risk_cap - S.coupRisk) / risk) : 0;
+
+  var h = '<h3 class="sech">الجيش</h3>'
+    + '<div class="card">'
+    + '<div class="krow"><span>ولاؤه = الجيش</span><b style="color:' + svcColor(army(S))
+    + '">' + ar(army(S)) + '</b></div>'
+    + '<div class="krow"><span>خط الخطر</span><b>' + ar(armyLine(S)) + '</b></div>'
+    + '<div class="krow"><span>خطر الانقلاب</span><b style="color:'
+    + (pct >= 50 ? 'var(--bad)' : pct > 0 ? 'var(--warn)' : 'var(--good)') + '">'
+    + ar(pct) + '٪</b></div>'
+    + '<div class="krow"><span>الشهر ده</span><b style="color:'
+    + (risk > 0 ? 'var(--bad)' : 'var(--good)') + '">'
+    + (risk > 0 ? '+' : '−') + arDec(Math.abs(risk), 1) + '</b></div>'
+    + '<div class="krow"><span>وبينزّل ثباتك كل شهر</span><b style="color:var(--bad)">−'
+    + arDec(S.coupRisk * a.stability_coef, 1) + '</b></div>'
+    + '<div class="krow"><span class="sub">'
+    + (risk > 0
+      ? '⚠️ بالمعدّل ده الجيش بيتحرك بعد ' + ar(months) + ' شهر.'
+      : 'الجيش معاك. الخطر بينزل لوحده طول ما ولاؤه فوق الخط.')
+    + '</span></div></div>'
+    + '<button class="danger" data-bribe="1"' + (no ? ' disabled' : '') + '>'
+    + '🎖️ ادفع للضباط ' + ar(a.bribe.cost) + 'م من جيبك'
+    + '<span>' + (no ? arText(no)
+      : '+' + ar(a.bribe.loyalty_gain) + ' ولاء · ' + ar(a.bribe.ap_cost) + ' طاقة · شبهة +'
+        + ar(a.bribe.heat) + ' · احتمال ' + ar(bribeLostChance(S))
+        + '٪ إنه ياخدها ومتوصلش (وقتها +' + ar(a.bribe.lost_loyalty_gain) + ' بس)')
+    + '</span></button>';
+  return h;
+}
+
+/* ---- suspicion, on the president's own desk ---------------------------- */
+
+/* Reads heatSources() rather than recomputing anything. If this screen did its
+   own arithmetic it would drift from the engine's the first time a coefficient
+   changed, and the player would be reading a lie that adds up. */
+function heatCard() {
+  var hc = BALANCE.heat, src = heatSources(S), net = heatChange(S);
+  var m = S.ministers.media;
+  var color = S.heat >= hc.scandal_at ? 'var(--bad)'
+    : S.heat > hc.scandal_at * 0.6 ? 'var(--warn)' : 'var(--good)';
+  var monthsLeft = net > 0 ? Math.ceil((hc.scandal_at - S.heat) / net) : 0;
+
+  var h = '<div class="card"><h3>الشبهة</h3>'
+    + '<div class="krow"><span>دلوقتي</span><b style="color:' + color + '">'
+    + ar(S.heat) + ' من ' + ar(hc.cap) + '</b></div>'
+    + '<div class="krow"><span>خط الفضيحة</span><b>' + ar(hc.scandal_at) + '</b></div>'
+    + '<div class="krow"><span>وزرا ولاؤهم واطي (' + ar(src.talkers) + ')</span>'
+    + '<b style="color:var(--bad)">+' + arDec(src.talk, 1) + '</b></div>'
+    + '<div class="krow"><span>' + postOf('media').name + ' (' + esc(m.name) + ')</span>'
+    + '<b style="color:var(--good)">−' + arDec(src.media, 1) + '</b></div>'
+    + '<div class="krow"><span>بينسى لوحده</span><b style="color:var(--good)">−'
+    + arDec(src.decay, 1) + '</b></div>'
+    + '<div class="krow tot"><span>الشهر ده</span><b style="color:'
+    + (net > 0 ? 'var(--bad)' : 'var(--good)') + '">'
+    + (net > 0 ? '+' : '−') + arDec(Math.abs(net), 1) + '</b></div>';
+
+  if (S.heat >= hc.scandal_at) {
+    h += '<div class="krow"><span class="sub">إنت فوق الخط — الفضيحة مستنية بس بوابة المعدّل تسمح.</span></div>';
+  } else if (net > 0) {
+    h += '<div class="krow"><span class="sub">بالمعدّل ده توصل خط الفضيحة بعد '
+      + ar(monthsLeft) + ' شهر.</span></div>';
+  } else {
+    h += '<div class="krow"><span class="sub">نازلة — مفيش فضيحة في الطريق دلوقتي.</span></div>';
+  }
+  return h + '</div>';
+}
+
+/* Shown only while the risk is above zero — see the call site. */
+function coupCard() {
+  if (S.coupRisk <= 0) return '';
+  var a = ARMY, risk = coupRiskChange(S);
+  var pct = Math.round(S.coupRisk / a.risk_cap * 100);
+  return '<div class="card danger2"><h3>⚠️ الجيش</h3>'
+    + '<div class="krow"><span>خطر الانقلاب</span><b style="color:var(--bad)">'
+    + ar(pct) + '٪</b></div>'
+    + '<div class="krow"><span>ولاء ' + postOf('defence').name + '</span><b style="color:'
+    + svcColor(army(S)) + '">' + ar(army(S)) + '</b></div>'
+    + '<div class="krow"><span>الشهر ده</span><b style="color:'
+    + (risk > 0 ? 'var(--bad)' : 'var(--good)') + '">'
+    + (risk > 0 ? '+' : '−') + arDec(Math.abs(risk), 1) + '</b></div>'
+    + '<button class="jump" data-open="minister" data-openid="defence">'
+    + '🎖️ روح لوزير الدفاع<span>الرشوة والأرقام كلها هناك</span></button>'
+    + '</div>';
+}
+
 function presBody() {
   var h = '';
   {
@@ -2263,6 +3239,13 @@ function presBody() {
         + '💰 الشهر ده: ' + (L.net >= 0 ? 'فائض ' : 'عجز ') + ar(Math.abs(L.net)) + 'م'
         + '<span>الدفتر كامل والضرايب والدعم عند ' + postOf('finance').name + '</span></button>';
     }
+    // Where the suspicion is coming from, in the same numbers the engine used.
+    // A running total the player is punished by and cannot account for is the
+    // one thing this system was built not to be.
+    h += heatCard();
+    // Only once it is actually running. A permanent card reading zero teaches
+    // the player to scroll past the place the warning will appear.
+    h += coupCard();
     if (S.log.length) {
       h += '<div class="card"><h3>آخر الأخبار</h3>'
         + S.log.slice(-6).reverse().map(function (l) { return '<div class="log">' + l + '</div>'; }).join('')
@@ -2272,13 +3255,90 @@ function presBody() {
   return h;
 }
 
+/* --------------------------------------------------------- situation card */
+/* How each kind of price is written out. A cost key that is not in here would
+   render as a blank price — a button that looks free and then charges — so
+   check.py refuses to build if situations.json ever uses a key this map has
+   no line for. */
+var COST_LABEL = {
+  ap:       function (n) { return ar(n) + ' طاقة'; },
+  treasury: function (n) { return ar(n) + 'م من الخزينة'; },
+  personal: function (n) { return ar(n) + 'م من جيبك'; }
+};
+
+function priceOf(ch) {
+  var c = ch.cost || {}, parts = [], k;
+  for (k in COST_LABEL) if (c[k]) parts.push(COST_LABEL[k](c[k]));
+  if (!parts.length) return '<span class="ofree">ببلاش</span>';
+  return parts.join('<br>');
+}
+
+/* The card is a pure function of S.pendingSituation, redrawn on every
+   drawGame(). Nothing in this file writes that field — only answerSituation()
+   in the engine clears it — so there is no code path anywhere in the UI that
+   can close this card without a decision being taken. That is the whole point:
+   an escape hatch here would be silent, and would only show up as "the game let
+   me skip the crisis" months after it shipped. */
+function drawSituation() {
+  var box = el('sit');
+  if (!S || !S.pendingSituation) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+  var sit = situationById(S.pendingSituation);
+  if (!sit) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+
+  // A scandal is marked on the card. Same machinery, different weather: the
+  // player must be able to tell "the country has a problem" from "you have a
+  // problem" without reading the text twice.
+  var bad = (sit.kind === 'scandal');
+  var h = '<div class="sbox' + (bad ? ' scandal' : '') + '">'
+    + (bad ? '<div class="sflag">فضيحة · شبهتك ' + ar(S.heat) + '</div>' : '')
+    + '<div class="shd"><span class="sic">' + sit.icon + '</span>'
+    + '<span class="stt">' + arText(esc(sit.title)) + '</span></div>'
+    + '<div class="stx">' + arText(esc(sit.text)) + '</div>'
+    // What he has to spend, next to what each choice costs. Without this he has
+    // to leave the card to find out why an option is locked — and he cannot.
+    + '<div class="purse">'
+    + '<div class="pit"><span>طاقة القرارات</span><b>' + ar(S.ap) + '/' + ar(S.apMax) + '</b></div>'
+    + '<div class="pit"><span>الخزينة</span><b>' + ar(S.treasury) + 'م</b></div>'
+    + '<div class="pit"><span>رصيدك</span><b>' + ar(S.personal) + 'م</b></div>'
+    + '</div>';
+
+  for (var i = 0; i < sit.choices.length; i++) {
+    var ch = sit.choices[i];
+    // The engine decides what is affordable, not this screen. If the two ever
+    // disagreed, the player would press a button that looks open and get a
+    // refusal — so there is only one answer to the question, and it is there.
+    var why = choiceRefusal(S, sit, i);
+    // The price stays on the button even when it is locked. Replacing it with
+    // the refusal was worse: he could see what he was short of but not what the
+    // thing cost, so he had no way to judge whether it was worth chasing.
+    h += '<button class="sopt' + (why ? ' lock' : '') + '" data-answer="' + i + '">'
+      + '<div class="orow"><span class="onm">' + arText(esc(ch.nm)) + '</span>'
+      + '<span class="opr">' + priceOf(ch) + '</span></div>'
+      + '<div class="osub">' + arText(esc(ch.sub)) + '</div>'
+      + (why ? '<div class="olock">🔒 ' + arText(why) + '</div>' : '')
+      + '</button>';
+  }
+  h += '<div class="must">' + (bad
+      ? 'الفضيحة حصلت خلاص — الاختيار هنا بيحدد تدفع تمنها إزاي، مش تهرب منها.'
+      : 'الوقت واقف لحد ما تقرر. مفيش رجوع من الشاشة دي — الاختيار المجاني موجود دايمًا.')
+    + '</div></div>';
+  box.innerHTML = h;
+  box.classList.remove('hidden');
+}
+
 function drawClock() {
   el('pp').textContent = running ? '⏸' : '▶';
   el('pp').className = 'cbtn' + (running ? ' on' : '');
   for (var i = 0; i < 3; i++) el('sp' + i).className = 'cbtn' + (speed === i ? ' on' : '');
 }
 
-function drawGame() { drawTop(); drawNav(); drawView(); drawClock(); }
+function drawGame() {
+  drawTop(); drawNav(); drawView(); drawClock(); drawSituation();
+  // Saved here and nowhere else. Every action and every month ends in a
+  // redraw, so no branch of the click handler can forget it — which is exactly
+  // how a player loses the move he just made.
+  persist();
+}
 
 /* ------------------------------------------------------------------ clock */
 /* The timer is the only thing that knows about real time. tickMonth() has no
@@ -2287,7 +3347,13 @@ function schedule() {
   if (timer) { clearInterval(timer); timer = null; }
   if (running) timer = setInterval(step, SPEEDS[speed] * 1000);
 }
-function setRunning(v) { running = v; schedule(); drawClock(); }
+/* The refusal lives here and not on the play button, because "the clock cannot
+   start while a decision is pending" is a rule about the clock — guarding the
+   one caller we happen to remember is how it comes back later. */
+function setRunning(v) {
+  if (v && S && S.pendingSituation) return;
+  running = v; schedule(); drawClock();
+}
 /* Turns an engine event into a line the player reads. Every number goes through
    ar() here, so nothing can reach the screen in Latin digits. */
 function eventText(e) {
@@ -2297,13 +3363,26 @@ function eventText(e) {
       + BALANCE.governorates[e.gov].name + ' — والمصروف الشهري زاد '
       + arDec(BALANCE.services[e.svc].adds_monthly, 1) + 'م للأبد.';
   }
+  if (e.type === 'situation') {
+    var sit = situationById(e.id);
+    if (!sit) return 'موقف — مستني قرارك.';
+    return sit.icon + ' ' + sit.title
+      + (sit.kind === 'scandal' ? ' — فضيحة، مستنية قرارك.' : ' — مستني قرارك.');
+  }
   if (e.type === 'deficit') {
     return '⚠️ الخزينة دخلت عجز. المرتبات مش مدفوعة، والخدمات بتنهار بسرعة مضاعفة.';
+  }
+  if (e.type === 'army') {
+    return '🎖️ خطر الانقلاب وصل ' + ar(e.pct) + '٪ — ولاء ' + postOf('defence').name
+      + ' ' + ar(e.loyalty) + '.';
   }
   if (e.type === 'boiling') {
     return '🔥 الغليان وصل ' + ar(e.pct) + '٪ — الشارع مش مطمئن.';
   }
   if (e.type === 'end') {
+    if (e.reason === 'coup') {
+      return '💥 الجيش تحرك. ' + e.minister + ' مبقاش معاك، وانتهى حكمك بانقلاب.';
+    }
     if (e.reason === 'riot') {
       return '💥 قام الشغب في ' + BALANCE.governorates[e.gov].name + ' وانتهى حكمك بالعزل.';
     }
@@ -2316,12 +3395,16 @@ function step() {
   var events = tickMonth(S);
   events.forEach(function (e) {
     var line = eventText(e);
-    if (line) S.log.push(line);
+    if (line) logLine(S, line);
     // A finished project, a deficit or the end are things the player must not
     // scroll past — put them in front of whichever screen they are on.
-    if (e.type === 'built' || e.type === 'deficit' || e.type === 'end' || e.type === 'boiling') {
+    if (e.type === 'built' || e.type === 'deficit' || e.type === 'end'
+      || e.type === 'boiling' || e.type === 'army') {
       toast(line);
     }
+    // A situation can land while a sheet is open. Close it, or the player is
+    // looking at a card he cannot dismiss on top of a decision he must take.
+    if (e.type === 'situation') closeSheet();
   });
   // Anything the player must see stops the clock. Later this is where a crisis,
   // a scandal or a finished project will pause the game for a decision.
@@ -2333,7 +3416,8 @@ function step() {
 var CLICKABLE = ['data-pick', 'data-nav', 'data-roll', 'data-tab', 'data-clock',
                  'data-build', 'data-close', 'data-buildgov',
                  'data-open', 'data-back', 'data-fire', 'data-hire', 'data-steal',
-                 'data-shuffle', 'data-print', 'data-governor'];
+                 'data-shuffle', 'data-print', 'data-governor', 'data-answer', 'data-bribe',
+                 'data-crack', 'data-menu', 'data-speed'];
 
 document.addEventListener('click', function (ev) {
   // Every clickable attribute must be listed here or its button does nothing.
@@ -2350,7 +3434,10 @@ document.addEventListener('click', function (ev) {
     drawSetup();
   } else if (t.dataset.nav) {
     captureNames();
-    if (t.dataset.nav === 'back') { setupState.step--; drawSetup(); }
+    if (t.dataset.nav === 'back') {
+      if (setupState.step > 0) { setupState.step--; drawSetup(); }
+      else showView('menu');
+    }
     else if (setupState.step < 3) { setupState.step++; drawSetup(); }
     else startGame();
   } else if (t.dataset.tab) {
@@ -2359,25 +3446,64 @@ document.addEventListener('click', function (ev) {
     openScreen(t.dataset.open, t.dataset.openid || null);
   } else if (t.dataset.back) {
     backScreen();
+  } else if (t.dataset.answer !== undefined) {
+    // A locked choice keeps its button on purpose: pressing it says why it is
+    // locked. The engine is asked either way, so a disabled-looking button and
+    // an actually-refused one can never drift apart.
+    var sitNow = situationById(S.pendingSituation);
+    var pick = sitNow && sitNow.choices[+t.dataset.answer];
+    var nope = answerSituation(S, +t.dataset.answer);
+    if (nope) { toast(nope); }
+    else {
+      var dl = sitNow.icon + ' ' + sitNow.title + ' — قررت: ' + pick.nm + '.';
+      logLine(S, dl); toast(dl); drawGame();
+    }
   } else if (t.dataset.steal) {
     var take = stealMax(S);
     var res = stealFromTreasury(S, take);
     if (typeof res === 'string') { toast(res); }
     else {
       var line = res.leaked
-        ? '🕳️ خدت ' + ar(take) + 'م — و' + postOf('finance').name + ' سرّبك. الناس عرفت.'
-        : '🕳️ خدت ' + ar(take) + 'م لجيبك. محدش اتكلم.';
-      S.log.push(line);
+        ? '🕳️ خدت ' + ar(take) + 'م — و' + postOf('finance').name
+          + ' سرّبك. الناس عرفت، والشبهة بقت ' + ar(S.heat) + '.'
+        : '🕳️ خدت ' + ar(take) + 'م لجيبك. محدش اتكلم — والشبهة بقت ' + ar(S.heat) + '.';
+      logLine(S, line);
       toast(line);
       drawGame();
+    }
+  } else if (t.dataset.menu) {
+    onMenu(t.dataset.menu);
+  } else if (t.dataset.speed) {
+    prefs.speed = +t.dataset.speed; savePrefs(); drawMenu();
+  } else if (t.dataset.crack) {
+    var cd = crackdown(S);
+    if (typeof cd === 'string') { toast(cd); }
+    else {
+      var cl = cd.worked
+        ? '🚔 الأمن نزل والشارع هدي — الغليان بقى ' + ar(S.boil) + ' والرضا ' + ar(S.approval) + '.'
+        : '🚔 القمع فشل. الشارع ولّع أكتر — الغليان بقى ' + ar(S.boil)
+          + ' والرضا ' + ar(S.approval) + '.';
+      logLine(S, cl); toast(cl); drawGame();
+    }
+  } else if (t.dataset.bribe) {
+    var out = bribeArmy(S);
+    if (typeof out === 'string') { toast(out); }
+    else {
+      var bl = out.lost
+        ? '🎖️ دفعت ' + ar(ARMY.bribe.cost) + 'م — و' + S.ministers.defence.name
+          + ' خدها. الضباط شافوا ' + ar(out.gain) + ' بس.'
+        : '🎖️ دفعت ' + ar(ARMY.bribe.cost) + 'م للضباط — ولاء الجيش بقى '
+          + ar(army(S)) + '.';
+      logLine(S, bl); toast(bl); drawGame();
     }
   } else if (t.dataset.print) {
     var amount = printCap(S);
     var whyNot = printMoney(S, amount);
     if (whyNot) { toast(whyNot); }
     else {
-      var pl = '🖨️ البنك طبع ' + ar(amount) + 'م — والتضخم بقى ' + arDec(S.inflation, 1) + '٪.';
-      S.log.push(pl); toast(pl); drawGame();
+      var pl = '🖨️ البنك طبع ' + ar(amount) + 'م — والتضخم بقى ' + arDec(S.inflation, 1)
+        + '٪ والشبهة ' + ar(S.heat) + '.';
+      logLine(S, pl); toast(pl); drawGame();
     }
   } else if (t.dataset.governor) {
     var was = S.bank.independence;
@@ -2385,8 +3511,8 @@ document.addEventListener('click', function (ev) {
     if (no) { toast(no); }
     else {
       var gl = '⚖️ ' + S.bank.name + ' بقى محافظ البنك — استقلاله ' + ar(S.bank.independence)
-        + ' بدل ' + ar(was) + '.';
-      S.log.push(gl); toast(gl); drawGame();
+        + ' بدل ' + ar(was) + '، والشبهة بقت ' + ar(S.heat) + '.';
+      logLine(S, gl); toast(gl); drawGame();
     }
   } else if (t.dataset.shuffle) {
     var out = reshuffleCabinet(S);
@@ -2398,7 +3524,7 @@ document.addEventListener('click', function (ev) {
       out.changed.forEach(function (c) { if (c.after > c.before) up++; else if (c.after < c.before) down++; });
       var line = '🔄 تعديل وزاري: ' + ar(out.changed.length) + ' وزير اتغيّروا — '
         + ar(up) + ' أحسن من اللي قبلهم و' + ar(down) + ' أوحش.';
-      S.log.push(line);
+      logLine(S, line);
       toast(line);
       drawGame();
     }
@@ -2412,7 +3538,7 @@ document.addEventListener('click', function (ev) {
     if (why) { toast(why); }
     else {
       toast('⚖️ ' + picked.name + ' بقى ' + postOf(post).name + '.');
-      S.log.push('عيّنت ' + picked.name + ' ' + postOf(post).name
+      logLine(S, 'عيّنت ' + picked.name + ' ' + postOf(post).name
         + ' بكفاءة ' + ar(picked.competence) + ' وولاء ' + ar(picked.loyalty) + '.');
       drawGame();
     }
@@ -2430,7 +3556,10 @@ document.addEventListener('click', function (ev) {
       drawGame();
     }
   } else if (t.dataset.clock === 'pp') {
-    setRunning(!running);
+    // setRunning() refuses on its own; this is only so the press says something
+    // instead of looking broken.
+    if (S.pendingSituation) toast('الوقت واقف — لازم تاخد قرار في الموقف الأول.');
+    else setRunning(!running);
   } else if (t.dataset.clock) {
     speed = +t.dataset.clock; schedule(); drawClock();
   }
@@ -2461,22 +3590,58 @@ function startGame() {
   if (!setupState.country) setupState.country = SETUP.suggested_country_names[0];
   if (!setupState.ruler) setupState.ruler = SETUP.suggested_ruler_names[0];
   S = newGame(setupState);
-  S.log.push('بدأ حكم ' + S.ruler + ' في ' + S.country + '.');
-  el('setup').classList.add('hidden');
-  el('game').classList.remove('hidden');
-  drawGame();
+  logLine(S, 'بدأ حكم ' + S.ruler + ' في ' + S.country + '.');
+  speed = prefs.speed;
+  showView('game');
 }
 
-/* Registering the worker is what lets the phone install the game and open it
-   with no connection. It fails by design when the page is opened from a file
-   (the Android shell) — that copy is already offline, so there is nothing to
-   cache and nothing to report. */
-if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-  navigator.serviceWorker.register('sw.js').catch(function () {});
+/* What each button on the menu does. One function so the list of what the menu
+   can do is readable in one place. */
+function onMenu(what) {
+  if (what === 'new') {
+    setupState = { step: 0, country: '', ruler: '', gov: null, soc: null };
+    showView('setup');
+  } else if (what === 'resume') {
+    var saved = readSave();
+    if (!saved) { toast('مفيش فترة حكم محفوظة'); drawMenu(); return; }
+    S = saved;
+    speed = prefs.speed;
+    running = false;
+    stack = [{ s: 'tab', id: 'pres' }];
+    showView('game');
+  } else if (what === 'settings') { menuPage = 'settings'; drawMenu(); }
+  else if (what === 'about') { menuPage = 'about'; drawMenu(); }
+  else if (what === 'main') { menuPage = 'main'; drawMenu(); }
+  else if (what === 'wipe') { openWipe(); }
+  else if (what === 'wipeyes') {
+    storeSet(SAVE_KEY, null);
+    closeSheet();
+    toast('اتمسح. ابدأ فترة حكم جديدة.');
+    drawMenu();
+  } else if (what === 'exit') {
+    // In a browser there is nothing to close; say so instead of doing nothing.
+    if (!exitApp()) toast('الخروج بيشتغل جوّه التطبيق بس.');
+  }
+}
+
+/* Asked before wiping, because it is the one button on the menu that destroys
+   something the player cannot get back. */
+function openWipe() {
+  var saved = readSave();
+  el('ovl').innerHTML = '<div class="sheet"><div class="sh"><span class="ic2">🗑️</span>'
+    + '<span class="nm3">امسح الحفظ؟</span>'
+    + '<button class="x" data-close="1">✕</button></div>'
+    + '<p class="lede2">' + (saved ? arText(esc(saveLabel(saved))) : '') + '<br>'
+    + 'فترة الحكم دي هتضيع خالص ومفيش طريقة ترجّعها.</p>'
+    + '<button class="danger" data-menu="wipeyes">امسحها</button>'
+    + '<button class="mbtn" data-close="1">سيبها</button></div>';
+  el('ovl').classList.remove('hidden');
 }
 
 el('artdefs').innerHTML = ART_DEFS;
-drawSetup();
+loadPrefs();
+speed = prefs.speed;
+showView('menu');
 </script>
 </body>
 </html>
