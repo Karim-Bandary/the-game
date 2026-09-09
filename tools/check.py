@@ -54,6 +54,40 @@ class Balance(html.parser.HTMLParser):
             self.stack.pop()
 
 
+# The files the project cannot work without. When one of these goes missing,
+# every check that reads it crashes, and the build prints seven variations of
+# "the check itself fell over" with a Python path in them — which tells Karim
+# nothing about what he actually has to do. This runs first and says the one
+# thing that matters: which file is gone.
+REQUIRED = [
+    ("index.html", "الصفحة الرئيسية للمشروع"),
+    ("game/index.html", "اللعبة الملزوقة"),
+    ("game/src/index.html", "قالب اللعبة"),
+    ("game/src/engine.js", "المحرك"),
+    ("game/src/ui.js", "الشاشات"),
+    ("game/src/style.css", "التنسيق"),
+    ("game/src/art.js", "الرسومات"),
+    ("docs/design.html", "وثيقة التصميم"),
+    ("docs/balance.html", "وثيقة الميزان"),
+    ("docs/app-mockup.html", "ماكيت التطبيق"),
+    ("docs/setup-mockup.html", "ماكيت شاشة البداية"),
+    ("docs/budget-mockup.html", "ماكيت الميزانية"),
+]
+
+
+def check_required_files(problems):
+    """Nothing clever — just names the missing file in one sentence.
+
+    Without this, a file deleted by accident on GitHub turns into a wall of
+    FileNotFoundError from seven other checks, and the message the build ends
+    with is about Python, not about the file. That happened, and it cost a round
+    of «I don't understand what to upload»."""
+    for rel, what in REQUIRED:
+        if not (ROOT / rel).exists():
+            problems.append(f"الملف «{rel}» ({what}) مش موجود في المشروع خالص — "
+                            f"غالبًا اتمسح بالغلط. ارفعه تاني وكل الباقي هيمشي.")
+
+
 def check_html_structure(problems):
     """Unclosed tags render as a blank or scrambled page — invisible to us."""
     for f in html_files():
@@ -1662,7 +1696,7 @@ def check_game_runs(problems):
 
 
 CHECKS = [
-    check_html_structure, check_anchors, check_tables, check_theme, check_svg,
+    check_required_files, check_html_structure, check_anchors, check_tables, check_theme, check_svg,
     check_javascript, check_balance_json, check_setup_json, check_situations, check_ministers_json, check_treasury, check_parliament, check_bank,
     check_browser_globals_are_faked, check_engine_is_repeatable,
     check_simulator_has_no_rules,

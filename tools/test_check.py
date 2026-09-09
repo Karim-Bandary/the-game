@@ -570,6 +570,20 @@ CSS_CASES = [
 ]
 
 
+def required_file_missing():
+    """A file the project cannot work without, deleted. This is not a mutation —
+    there is nothing to change, only something to remove — and it is the exact
+    accident that turned one build red with seven unreadable Python errors."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "repo"
+        shutil.copytree(ROOT, work, ignore=shutil.ignore_patterns(".git", "__pycache__"))
+        (work / "index.html").unlink()
+        env = dict(os.environ); env["CHECK_SKIP"] = "check_generated_files_match"
+        r = subprocess.run([sys.executable, str(work / "tools" / "check.py")],
+                           capture_output=True, text=True, env=env)
+        return r.returncode != 0 and "مش موجود في المشروع خالص" in r.stdout
+
+
 def retired_file_returns():
     """A deleted file coming back is its own kind of breakage: nothing to mutate,
     something to create."""
@@ -663,7 +677,8 @@ def main():
         results = list(pool.map(
             lambda j: broken_repo_fails(j[1], j[2], j[3], rebuild=j[4], expect=j[5]), jobs))
 
-    extra = [("ملف من اللي اتشالوا رجع", retired_file_returns()),
+    extra = [("ملف أساسي اتمسح من المشروع", required_file_missing()),
+             ("ملف من اللي اتشالوا رجع", retired_file_returns()),
              ("نسخة من ملف tools في جذر المشروع", stray_root_copy())]
 
     ok = True
